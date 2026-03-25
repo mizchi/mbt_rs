@@ -5,8 +5,9 @@ use syn::*;
 
 thread_local! {
     /// Track wrapper types (Rc, Arc, RefCell, Mutex) used during conversion.
-    /// These will be emitted as type aliases at the top of the output.
     static USED_WRAPPER_TYPES: RefCell<BTreeSet<String>> = RefCell::new(BTreeSet::new());
+    /// Current impl block's self type name (for resolving Self).
+    static CURRENT_SELF_TYPE: RefCell<String> = RefCell::new(String::new());
 }
 
 fn record_wrapper_type(name: &str) {
@@ -17,6 +18,18 @@ fn record_wrapper_type(name: &str) {
 
 fn take_wrapper_types() -> BTreeSet<String> {
     USED_WRAPPER_TYPES.with(|set| std::mem::take(&mut *set.borrow_mut()))
+}
+
+fn set_self_type(name: &str) {
+    CURRENT_SELF_TYPE.with(|s| *s.borrow_mut() = name.to_string());
+}
+
+fn clear_self_type() {
+    CURRENT_SELF_TYPE.with(|s| s.borrow_mut().clear());
+}
+
+fn get_self_type() -> String {
+    CURRENT_SELF_TYPE.with(|s| s.borrow().clone())
 }
 
 /// Convert Rust source code to MoonBit source code.
@@ -216,6 +229,13 @@ fn print_type(buf: &mut String, ty: &Type) {
         Type::Path(tp) => {
             if let Some(seg) = tp.path.segments.last() {
                 let ident_str = seg.ident.to_string();
+                // Resolve Self to the actual type name from enclosing impl block
+                let ident_str = if ident_str == "Self" {
+                    let self_ty = get_self_type();
+                    if !self_ty.is_empty() { self_ty } else { ident_str }
+                } else {
+                    ident_str
+                };
                 let name = mapping::lookup_type(&ident_str);
                 if name.is_empty() {
                     // Wrapper type (Box, Rc, Arc, etc.) → unwrap to inner type
@@ -493,6 +513,12 @@ fn print_static(buf: &mut String, s: &ItemStatic, level: usize) {
 
 fn print_impl(buf: &mut String, i: &ItemImpl, level: usize) {
     indent(buf, level);
+    // Set Self type for resolution within the impl block
+    if let Type::Path(tp) = i.self_ty.as_ref() {
+        if let Some(seg) = tp.path.segments.last() {
+            set_self_type(&seg.ident.to_string());
+        }
+    }
     if let Some((_, path, _)) = &i.trait_ {
         // impl Trait for Type { methods }
         for item in &i.items {
@@ -567,6 +593,7 @@ fn print_impl(buf: &mut String, i: &ItemImpl, level: usize) {
             }
         }
     }
+    clear_self_type();
 }
 
 fn print_derive_attrs(buf: &mut String, attrs: &[Attribute]) {
@@ -716,39 +743,29 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
             buf.push(')');
         }
         Expr::If(i) => {
-            // if let Some(x) = expr → match expr { Some(x) => ..., _ => ... }
+            // if let Some(x) = expr → if expr is Some(x) { ... } else { ... }
             if let Expr::Let(let_expr) = i.cond.as_ref() {
-                buf.push_str("match ");
+                buf.push_str("if ");
                 print_expr(buf, &let_expr.expr, level);
-                buf.push_str(" {\n");
-                indent(buf, level + 1);
+                buf.push_str(" is ");
                 print_pat(buf, &let_expr.pat, level);
-                buf.push_str(" => {\n");
-                print_block_body(buf, &i.then_branch, level + 2);
-                buf.push('\n');
-                indent(buf, level + 1);
-                buf.push('}');
-                if let Some((_, else_expr)) = &i.else_branch {
-                    buf.push('\n');
-                    indent(buf, level + 1);
-                    buf.push_str("_ => {\n");
-                    if let Expr::Block(block) = else_expr.as_ref() {
-                        print_block_body(buf, &block.block, level + 2);
-                    } else {
-                        indent(buf, level + 2);
-                        print_expr(buf, else_expr, level + 2);
-                    }
-                    buf.push('\n');
-                    indent(buf, level + 1);
-                    buf.push('}');
-                } else {
-                    buf.push('\n');
-                    indent(buf, level + 1);
-                    buf.push_str("_ => ()");
-                }
+                buf.push_str(" {\n");
+                print_block_body(buf, &i.then_branch, level + 1);
                 buf.push('\n');
                 indent(buf, level);
                 buf.push('}');
+                if let Some((_, else_expr)) = &i.else_branch {
+                    buf.push_str(" else {\n");
+                    if let Expr::Block(block) = else_expr.as_ref() {
+                        print_block_body(buf, &block.block, level + 1);
+                    } else {
+                        indent(buf, level + 1);
+                        print_expr(buf, else_expr, level + 1);
+                    }
+                    buf.push('\n');
+                    indent(buf, level);
+                    buf.push('}');
+                }
             } else {
             buf.push_str("if ");
             print_expr(buf, &i.cond, level);

@@ -602,10 +602,26 @@ fn test_result_with_box_error() {
 }
 
 #[test]
+fn test_if_let_is_pattern() {
+    assert_rs2mbt(
+        "fn try_parse(s: &str) -> i32 { if let Ok(n) = s.parse::<i32>() { n } else { 0 } }",
+        "fn try_parse(s : String) -> Int {\n  if s.parse() is Ok(n) {\n    n\n  } else {\n    0\n  }\n}",
+    );
+}
+
+#[test]
+fn test_self_resolved_in_impl() {
+    assert_rs2mbt(
+        "impl Stack { fn new() -> Self { Stack { elements: Vec::new() } } }",
+        "fn Stack::new() -> Stack {\n  { elements: Array.new() }\n}",
+    );
+}
+
+#[test]
 fn test_impl_with_lifetime() {
     assert_rs2mbt(
         "impl<'a> Ref<'a> { fn new(data: &'a str) -> Self { Ref { data } } }",
-        "fn Ref::new(data : String) -> Self {\n  { data: data }\n}",
+        "fn Ref::new(data : String) -> Ref {\n  { data: data }\n}",
     );
 }
 
@@ -615,7 +631,7 @@ fn test_impl_with_lifetime() {
 fn test_if_let_to_match() {
     assert_rs2mbt(
         "fn extract(opt: Option<i32>) -> i32 { if let Some(x) = opt { x } else { 0 } }",
-        "fn extract(opt : Option[Int]) -> Int {\n  match opt {\n    Some(x) => {\n      x\n    }\n    _ => {\n      0\n    }\n  }\n}",
+        "fn extract(opt : Option[Int]) -> Int {\n  if opt is Some(x) {\n    x\n  } else {\n    0\n  }\n}",
     );
 }
 

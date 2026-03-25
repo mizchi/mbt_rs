@@ -1,7 +1,7 @@
 pub struct Stack[T] {
   elements : Array[T]
 }
-pub fn Stack::new() -> Self {
+pub fn Stack::new() -> Stack {
   { elements: Array.new() }
 }
 pub fn Stack::push(self, item : T) {
@@ -59,11 +59,8 @@ pub fn eval_rpn(tokens : Array[String]) -> Double {
         }
         stack.push(result)
       }
-      num =>       match num.parse() {
-        Ok(n) => {
-          stack.push(n)
-        }
-        _ => ()
+      num =>       if num.parse() is Ok(n) {
+        stack.push(n)
       }
     }
   }

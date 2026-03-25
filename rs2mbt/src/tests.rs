@@ -660,3 +660,153 @@ fn test_empty_struct() {
         "struct Unit",
     );
 }
+
+// === New patterns round 3 ===
+
+#[test]
+fn test_static_const() {
+    assert_rs2mbt(
+        "static MAX: i32 = 100;",
+        "const MAX : Int = 100",
+    );
+}
+
+#[test]
+fn test_static_mut() {
+    assert_rs2mbt(
+        "static mut COUNTER: i32 = 0;",
+        "let mut COUNTER : Int = 0",
+    );
+}
+
+#[test]
+fn test_inherent_impl() {
+    assert_rs2mbt(
+        "impl Point { fn new(x: i32, y: i32) -> Point { Point { x, y } } }",
+        "fn Point::new(x : Int, y : Int) -> Point {\n  { x: x, y: y }\n}",
+    );
+}
+
+#[test]
+fn test_inherent_impl_method() {
+    assert_rs2mbt(
+        "impl Point { fn distance(&self) -> f64 { 0.0 } }",
+        "fn Point::distance(self) -> Double {\n  0.0\n}",
+    );
+}
+
+#[test]
+fn test_matches_macro() {
+    assert_rs2mbt(
+        "fn is_some(x: Option<i32>) -> bool { matches!(x, Some(_)) }",
+        "fn is_some(x : Option[Int]) -> Bool {\n  x is Some (_)\n}",
+    );
+}
+
+#[test]
+fn test_while_let() {
+    assert_rs2mbt(
+        "fn drain(v: &mut Vec<i32>) { while let Some(x) = v.pop() { println!(\"{}\", x); } }",
+        "fn drain(v : Array[Int]) {\n  // while let → loop+match\n  while true {\n    match v.pop() {\n      Some(x) => {\n        println(\"{}\" , x)\n      }\n      _ => break\n    }\n  }\n}",
+    );
+}
+
+#[test]
+fn test_closure_with_return_type() {
+    assert_rs2mbt(
+        "fn foo() -> i32 { let f = |x: i32| -> i32 { x + 1 }; f(10) }",
+        "fn foo() -> Int {\n  let f = fn(x : Int) -> Int {   x + 1 }\n  f(10)\n}",
+    );
+}
+
+#[test]
+fn test_nested_method_calls() {
+    assert_rs2mbt(
+        "fn count(v: Vec<i32>) -> usize { v.iter().filter(|x| *x > 0).count() }",
+        "fn count(v : Array[Int]) -> Int {\n  v.iter().filter(fn(x) { x > 0 }).count()\n}",
+    );
+}
+
+#[test]
+fn test_multiple_trait_bounds() {
+    assert_rs2mbt(
+        "fn show<T: Display + Debug>(x: T) {}",
+        "fn show[T : Display + Debug](x : T) {\n\n}",
+    );
+}
+
+#[test]
+fn test_method_to_string() {
+    assert_rs2mbt(
+        "fn stringify(x: i32) -> String { x.to_string() }",
+        "fn stringify(x : Int) -> String {\n  x.to_string()\n}",
+    );
+}
+
+#[test]
+fn test_method_is_empty() {
+    assert_rs2mbt(
+        "fn check(v: Vec<i32>) -> bool { v.is_empty() }",
+        "fn check(v : Array[Int]) -> Bool {\n  v.is_empty()\n}",
+    );
+}
+
+#[test]
+fn test_method_clone() {
+    assert_rs2mbt(
+        "fn dup(s: String) -> String { s.clone() }",
+        "fn dup(s : String) -> String {\n  s.copy()\n}",
+    );
+}
+
+#[test]
+fn test_impl_trait_with_body() {
+    assert_rs2mbt(
+        "impl Display for Point { fn fmt(&self, f: &mut Formatter) -> Result<(), Error> { Ok(()) } }",
+        "impl Display for Point with fmt(self, f : Formatter) -> Result[Unit, Error] {\n  Ok(())\n}",
+    );
+}
+
+#[test]
+fn test_multiline_fn() {
+    assert_rs2mbt(
+        r#"fn fibonacci(n: i32) -> i32 {
+            if n <= 1 {
+                return n;
+            }
+            let mut a = 0;
+            let mut b = 1;
+            let mut i = 2;
+            while i <= n {
+                let temp = a + b;
+                a = b;
+                b = temp;
+                i = i + 1;
+            }
+            b
+        }"#,
+        "fn fibonacci(n : Int) -> Int {\n  if n <= 1 {\n    return n\n  }\n  let mut a = 0\n  let mut b = 1\n  let mut i = 2\n  while i <= n {\n    let temp = a + b\n    a = b\n    b = temp\n    i = i + 1\n  }\n  b\n}",
+    );
+}
+
+#[test]
+fn test_enum_with_derive_multiple() {
+    assert_rs2mbt(
+        "#[derive(Debug, Clone, PartialEq, Eq, Hash)]\nenum Token { Ident(String), Number(i32), Plus, Minus }",
+        "derive(Show, Eq, Hash)enum Token {\n  Ident(String)\n  Number(Int)\n  Plus\n  Minus\n}",
+    );
+}
+
+#[test]
+fn test_complex_match_body() {
+    assert_rs2mbt(
+        r#"fn eval(expr: Expr) -> i32 {
+            match expr {
+                Expr::Lit(n) => n,
+                Expr::Add(a, b) => eval(*a) + eval(*b),
+                _ => 0,
+            }
+        }"#,
+        "fn eval(expr : Expr) -> Int {\n  match expr {\n    Expr.Lit(n) => n\n    Expr.Add(a, b) => eval(a) + eval(b)\n    _ => 0\n  }\n}",
+    );
+}

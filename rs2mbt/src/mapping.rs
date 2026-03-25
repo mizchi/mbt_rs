@@ -53,6 +53,7 @@ pub fn lookup_macro(name: &str) -> Option<&str> {
         "print" => Some("print"),
         "eprintln" => Some("eprintln"),
         "panic" => Some("abort"),
+        "matches" => None, // handled specially as `is` expression
         "todo" => None, // MoonBit uses `_` or `...`
         "vec" => None,  // handled specially
         "format" => None, // handled as string interpolation

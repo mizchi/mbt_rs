@@ -27,7 +27,17 @@ fn print_item(buf: &mut String, item: &Item, level: usize) {
         Item::Const(c) => print_const(buf, c, level),
         Item::Trait(t) => print_trait(buf, t, level),
         Item::Impl(i) => print_impl(buf, i, level),
+        Item::Static(s) => print_static(buf, s, level),
         Item::Use(_) => {} // skip use statements
+        Item::Mod(m) => {
+            // module → just print inner items
+            if let Some((_, items)) = &m.content {
+                for item in items {
+                    print_item(buf, item, level);
+                    buf.push('\n');
+                }
+            }
+        }
         _ => {
             buf.push_str("// TODO(transpile): unsupported item\n");
         }
@@ -342,6 +352,21 @@ fn print_trait(buf: &mut String, t: &ItemTrait, level: usize) {
     buf.push('}');
 }
 
+fn print_static(buf: &mut String, s: &ItemStatic, level: usize) {
+    indent(buf, level);
+    print_visibility(buf, &s.vis);
+    if matches!(s.mutability, StaticMutability::Mut(_)) {
+        buf.push_str("let mut ");
+    } else {
+        buf.push_str("const ");
+    }
+    buf.push_str(&s.ident.to_string());
+    buf.push_str(" : ");
+    print_type(buf, &s.ty);
+    buf.push_str(" = ");
+    print_expr(buf, &s.expr, level);
+}
+
 fn print_impl(buf: &mut String, i: &ItemImpl, level: usize) {
     indent(buf, level);
     if let Some((_, path, _)) = &i.trait_ {
@@ -379,6 +404,27 @@ fn print_impl(buf: &mut String, i: &ItemImpl, level: usize) {
                         print_type(buf, &pat_type.ty);
                     }
                 }
+                buf.push(')');
+                print_return_type(buf, &method.sig.output);
+                buf.push_str(" {\n");
+                print_block_body(buf, &method.block, level + 1);
+                buf.push('\n');
+                indent(buf, level);
+                buf.push('}');
+                buf.push('\n');
+            }
+        }
+    } else {
+        // inherent impl: impl Type { methods } → fn Type::method(self, ...) { ... }
+        for item in &i.items {
+            if let ImplItem::Fn(method) = item {
+                print_visibility(buf, &method.vis);
+                buf.push_str("fn ");
+                print_type(buf, &i.self_ty);
+                buf.push_str("::");
+                buf.push_str(&method.sig.ident.to_string());
+                buf.push('(');
+                print_fn_params(buf, &method.sig.inputs);
                 buf.push(')');
                 print_return_type(buf, &method.sig.output);
                 buf.push_str(" {\n");
@@ -674,13 +720,38 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
             print_expr(buf, &a.right, level);
         }
         Expr::While(w) => {
-            buf.push_str("while ");
-            print_expr(buf, &w.cond, level);
-            buf.push_str(" {\n");
-            print_block_body(buf, &w.body, level + 1);
-            buf.push('\n');
-            indent(buf, level);
-            buf.push('}');
+            // while let Some(x) = iter.next() → MoonBit has no while let, desugar to loop+match
+            if let Expr::Let(let_expr) = w.cond.as_ref() {
+                buf.push_str("// while let → loop+match\n");
+                indent(buf, level);
+                buf.push_str("while true {\n");
+                indent(buf, level + 1);
+                buf.push_str("match ");
+                print_expr(buf, &let_expr.expr, level + 1);
+                buf.push_str(" {\n");
+                indent(buf, level + 2);
+                print_pat(buf, &let_expr.pat, level);
+                buf.push_str(" => {\n");
+                print_block_body(buf, &w.body, level + 3);
+                buf.push('\n');
+                indent(buf, level + 2);
+                buf.push('}');
+                buf.push('\n');
+                indent(buf, level + 2);
+                buf.push_str("_ => break\n");
+                indent(buf, level + 1);
+                buf.push_str("}\n");
+                indent(buf, level);
+                buf.push('}');
+            } else {
+                buf.push_str("while ");
+                print_expr(buf, &w.cond, level);
+                buf.push_str(" {\n");
+                print_block_body(buf, &w.body, level + 1);
+                buf.push('\n');
+                indent(buf, level);
+                buf.push('}');
+            }
         }
         Expr::ForLoop(f) => {
             buf.push_str("for ");
@@ -703,7 +774,9 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
                 first = false;
                 print_pat(buf, input, level);
             }
-            buf.push_str(") { ");
+            buf.push(')');
+            print_return_type(buf, &c.output);
+            buf.push_str(" { ");
             print_expr(buf, &c.body, level);
             buf.push_str(" }");
         }
@@ -829,6 +902,19 @@ fn print_expr_macro(buf: &mut String, mac: &ExprMacro, _level: usize) {
         buf.push_str(&tokens);
         buf.push('"');
         buf.push_str(" // TODO: convert to string interpolation");
+    } else if name == "matches" {
+        // matches!(expr, pattern) → expr is pattern
+        let tokens = mac.mac.tokens.to_string();
+        // Split on first comma
+        if let Some(idx) = tokens.find(',') {
+            let expr_part = tokens[..idx].trim();
+            let pat_part = tokens[idx + 1..].trim();
+            buf.push_str(expr_part);
+            buf.push_str(" is ");
+            buf.push_str(pat_part);
+        } else {
+            buf.push_str(&tokens);
+        }
     } else if name == "todo" {
         buf.push_str("...");
     } else {

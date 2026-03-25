@@ -103,6 +103,27 @@ quality-report-all:
         "$root/rs2mbt/target/debug/rs2mbt" --report "$f" 2>&1 | head -25
     done
 
+# Convert a Rust crate with macro expansion (requires cargo-expand)
+# Usage: just expand-and-convert path/to/rust/crate
+expand-and-convert crate_path:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    cargo build -q --manifest-path "$root/rs2mbt/Cargo.toml"
+    echo "Expanding macros in {{crate_path}}..."
+    expanded=$(cd "{{crate_path}}" && cargo expand 2>/dev/null)
+    echo "$expanded" | "$root/rs2mbt/target/debug/rs2mbt"
+
+# Convert with macro expansion + quality report
+expand-and-report crate_path:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    cargo build -q --manifest-path "$root/rs2mbt/Cargo.toml"
+    echo "Expanding macros in {{crate_path}}..."
+    expanded=$(cd "{{crate_path}}" && cargo expand 2>/dev/null)
+    echo "$expanded" | "$root/rs2mbt/target/debug/rs2mbt" --report
+
 # Generate MoonBit from real Rust projects (for inspection, not CI)
 generate-real-projects:
     #!/usr/bin/env bash

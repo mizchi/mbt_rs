@@ -7,6 +7,7 @@
 - [x] `mut` パラメータ展開 (`fn foo(mut x: i32)` → body先頭に `let mut x = x`)
 - [x] `String::from("lit")` → `"lit"` コンストラクタ簡略化
 - [x] `Vec::new()` → `[]`, `String::new()` → `""`, `HashMap::new()` → `{}` コンストラクタ変換
+- [x] `cargo expand` 連携 (`just expand-and-convert` / `just expand-and-report`)
 - [ ] 生成 MoonBit コードに `moon fmt` 自動適用 (justfile タスク)
 
 ## Medium Priority (中程度の労力)
@@ -67,7 +68,7 @@ tokio と moonbitlang/async は共に「async fn + await + タスクスポーン
 
 - Rust のライフタイム・所有権は全て除去 (MoonBit は GC)
 - `unsafe` ブロックはコメント付きで除去
-- `macro_rules!` は変換不可 (TODO コメント出力)
+- `macro_rules!` 定義は変換不可 (呼び出しは `cargo expand` で事前展開すれば解決)
 - Rust の `trait object` (`dyn Trait`) → trait 名のみ
 - `async`/`await` は未対応 (tokio ↔ moonbitlang/async の計画あり、上記参照)
 - 型推論は行わない (syn はパースのみ)

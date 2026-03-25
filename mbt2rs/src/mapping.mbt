@@ -64,9 +64,9 @@ pub fn rust_lookup_method(method_name : String) -> String {
     "to_upper" => "to_uppercase"
     "replace" => "replace"
     // === Bytes ===
-    "to_bytes" => "as_bytes"    // String.to_bytes() → .as_bytes()
-    "of_string" => "from"       // Bytes::of_string(s) → String::from(s).into_bytes()
-    "at" => "get"               // bytes.at(i) → bytes[i] (approximate)
+    "to_bytes" => "as_bytes" // String.to_bytes() → .as_bytes()
+    "of_string" => "from" // Bytes::of_string(s) → String::from(s).into_bytes()
+    "at" => "get" // bytes.at(i) → bytes[i] (approximate)
     // === Array / Vec ===
     "push" => "push"
     "pop" => "pop"

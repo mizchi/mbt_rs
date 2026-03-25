@@ -138,6 +138,9 @@ fn print_fn(buf: &mut String, f: &ItemFn, level: usize) {
     set_where_fn_types(extract_where_fn_types(&f.sig.generics));
     indent(buf, level);
     print_visibility(buf, &f.vis);
+    if f.sig.asyncness.is_some() {
+        buf.push_str("async ");
+    }
     buf.push_str("fn");
     print_generics(buf, &f.sig.generics);
     buf.push(' ');
@@ -1245,6 +1248,19 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
         }
         Expr::Group(g) => {
             print_expr(buf, &g.expr, level);
+        }
+        Expr::Await(a) => {
+            // expr.await → expr.await!  (MoonBit async)
+            print_expr(buf, &a.base, level);
+            buf.push_str(".await!"); // TODO: check MoonBit async syntax when stabilized
+        }
+        Expr::Async(a) => {
+            // async { block } → async { block }
+            buf.push_str("async {\n");
+            print_block_body(buf, &a.block, level + 1);
+            buf.push('\n');
+            indent(buf, level);
+            buf.push('}');
         }
         Expr::Infer(_) => {
             buf.push('_');

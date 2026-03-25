@@ -218,7 +218,10 @@ fn rust_convert_name(name : String) -> String {
 ///|
 fn rust_print_fun_decl(buf : StringBuilder, decl : @syntax.FunDecl) -> Unit {
   rust_print_visibility(buf, decl.vis)
-  buf.write_string("fn ")
+  match decl.is_async {
+    Some(_) => buf.write_string("async fn ")
+    None => buf.write_string("fn ")
+  }
   match decl.type_name {
     // Self:: method syntax not applicable at top level in Rust
     Some(_) => ()

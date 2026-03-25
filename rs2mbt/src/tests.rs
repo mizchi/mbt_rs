@@ -963,6 +963,32 @@ fn test_enum_with_derive_multiple() {
     );
 }
 
+// === Async ===
+
+#[test]
+fn test_async_fn() {
+    assert_rs2mbt(
+        "async fn fetch_data() -> String { String::new() }",
+        "async fn fetch_data() -> String {\n  \"\"\n}",
+    );
+}
+
+#[test]
+fn test_await_expr() {
+    assert_rs2mbt(
+        "async fn get() -> i32 { foo().await }",
+        "async fn get() -> Int {\n  foo().await!\n}",
+    );
+}
+
+#[test]
+fn test_async_block() {
+    assert_rs2mbt(
+        "fn spawn_task() { let handle = async { 42 }; }",
+        "fn spawn_task() -> Unit {\n  let handle = async {\n    42\n  }\n}",
+    );
+}
+
 #[test]
 fn test_complex_match_body() {
     assert_rs2mbt(

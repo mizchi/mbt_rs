@@ -69,3 +69,27 @@ test "first_of_pair" {
 test "divmod" {
   assert_eq(divmod(10, 3), (3, 1))
 }
+
+// Lifetime/ownership tests - these Rust functions had &, Box, lifetimes
+// but generate clean MoonBit that just works without any of that.
+
+test "len_ref: &str dropped" {
+  assert_eq(len_ref("hello"), 5)
+}
+
+test "inc_mut: &mut dropped" {
+  assert_eq(inc_mut(10), 11)
+}
+
+test "unbox: Box unwrapped" {
+  assert_eq(unbox(42), 42)
+}
+
+test "longer: lifetimes dropped" {
+  assert_eq(longer("hi", "hello"), "hello")
+}
+
+test "find_ref: Option<&T> simplified" {
+  let result : Option[Int] = find_ref([], 1)
+  assert_eq(result, None)
+}

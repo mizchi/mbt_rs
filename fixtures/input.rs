@@ -130,3 +130,32 @@ fn first_of_pair(pair: (i32, i32)) -> i32 {
 fn divmod(a: i32, b: i32) -> (i32, i32) {
     (a / b, a % b)
 }
+
+// === Lifetime / ownership tests ===
+// These Rust functions use &, &mut, Box, lifetimes etc.
+// MoonBit doesn't need any of that (GC'd), so they should
+// convert to clean MoonBit without any pointer/lifetime info.
+
+fn len_ref(s: &str) -> usize {
+    s.len()
+}
+
+fn inc_mut(x: &mut i32) -> i32 {
+    *x + 1
+}
+
+fn unbox(b: Box<i32>) -> i32 {
+    *b
+}
+
+fn longer<'a>(a: &'a str, b: &'a str) -> &'a str {
+    if a.len() > b.len() {
+        a
+    } else {
+        b
+    }
+}
+
+fn find_ref(v: &Vec<i32>, key: i32) -> Option<&i32> {
+    None
+}

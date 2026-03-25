@@ -459,6 +459,156 @@ fn test_reference_dropped() {
     );
 }
 
+// === Lifetime / Pointer stripping ===
+// MoonBit is GC'd, so references, lifetimes, Box, Rc, Arc are all stripped.
+
+#[test]
+fn test_mut_ref_dropped() {
+    assert_rs2mbt(
+        "fn inc(x: &mut i32) { *x = *x + 1; }",
+        "fn inc(x : Int) {\n  x = x + 1\n}",
+    );
+}
+
+#[test]
+fn test_box_unwrapped() {
+    assert_rs2mbt(
+        "fn unbox(b: Box<i32>) -> i32 { *b }",
+        "fn unbox(b : Int) -> Int {\n  b\n}",
+    );
+}
+
+#[test]
+fn test_box_in_struct() {
+    assert_rs2mbt(
+        "struct Node { value: i32, next: Option<Box<Node>> }",
+        "struct Node {\n  value : Int\n  next : Option[Node]\n}",
+    );
+}
+
+#[test]
+fn test_rc_unwrapped() {
+    assert_rs2mbt(
+        "fn get_val(r: Rc<String>) -> String { r.clone() }",
+        "fn get_val(r : String) -> String {\n  r.copy()\n}",
+    );
+}
+
+#[test]
+fn test_arc_unwrapped() {
+    assert_rs2mbt(
+        "fn get_val(a: Arc<i32>) -> i32 { *a }",
+        "fn get_val(a : Int) -> Int {\n  a\n}",
+    );
+}
+
+#[test]
+fn test_lifetime_in_fn_dropped() {
+    assert_rs2mbt(
+        "fn first<'a>(s: &'a str) -> &'a str { s }",
+        "fn first(s : String) -> String {\n  s\n}",
+    );
+}
+
+#[test]
+fn test_lifetime_in_struct_dropped() {
+    assert_rs2mbt(
+        "struct Ref<'a> { data: &'a str }",
+        "struct Ref {\n  data : String\n}",
+    );
+}
+
+#[test]
+fn test_multiple_lifetimes_dropped() {
+    assert_rs2mbt(
+        "fn longer<'a, 'b>(a: &'a str, b: &'b str) -> &'a str { if a.len() > b.len() { a } else { b } }",
+        "fn longer(a : String, b : String) -> String {\n  if a.length() > b.length() {\n    a\n  } else {\n    b\n  }\n}",
+    );
+}
+
+#[test]
+fn test_lifetime_with_type_param() {
+    assert_rs2mbt(
+        "fn wrap<'a, T>(val: &'a T) -> &'a T { val }",
+        "fn[T] wrap(val : T) -> T {\n  val\n}",
+    );
+}
+
+#[test]
+fn test_cow_unwrapped() {
+    assert_rs2mbt(
+        "fn to_owned(s: Cow<str>) -> String { s.into_owned() }",
+        "fn to_owned(s : String) -> String {\n  s.into_owned()\n}",
+    );
+}
+
+#[test]
+fn test_cell_unwrapped() {
+    assert_rs2mbt(
+        "fn get_cell(c: Cell<i32>) -> i32 { c.get() }",
+        "fn get_cell(c : Int) -> Int {\n  c.get()\n}",
+    );
+}
+
+#[test]
+fn test_refcell_unwrapped() {
+    assert_rs2mbt(
+        "fn borrow_val(r: RefCell<String>) -> String { r.borrow().clone() }",
+        "fn borrow_val(r : String) -> String {\n  r.borrow().copy()\n}",
+    );
+}
+
+#[test]
+fn test_deref_expr_dropped() {
+    assert_rs2mbt(
+        "fn read(p: &i32) -> i32 { *p }",
+        "fn read(p : Int) -> Int {\n  p\n}",
+    );
+}
+
+#[test]
+fn test_raw_pointer_dropped() {
+    assert_rs2mbt(
+        "fn read_ptr(p: *const i32) -> i32 { 0 }",
+        "fn read_ptr(p : Int) -> Int {\n  0\n}",
+    );
+}
+
+#[test]
+fn test_complex_ownership_chain() {
+    // Box<Vec<&str>> → Array[String]
+    assert_rs2mbt(
+        "fn get_items(items: Box<Vec<&str>>) -> Vec<&str> { *items }",
+        "fn get_items(items : Array[String]) -> Array[String] {\n  items\n}",
+    );
+}
+
+#[test]
+fn test_option_ref_simplified() {
+    // Option<&T> → Option[T]
+    assert_rs2mbt(
+        "fn find(v: &Vec<i32>, key: i32) -> Option<&i32> { None }",
+        "fn find(v : Array[Int], key : Int) -> Option[Int] {\n  None\n}",
+    );
+}
+
+#[test]
+fn test_result_with_box_error() {
+    // Result<T, Box<dyn Error>> → Result[T, Error]
+    assert_rs2mbt(
+        "fn parse(s: &str) -> Result<i32, Box<dyn Error>> { Ok(0) }",
+        "fn parse(s : String) -> Result[Int, Error] {\n  Ok(0)\n}",
+    );
+}
+
+#[test]
+fn test_impl_with_lifetime() {
+    assert_rs2mbt(
+        "impl<'a> Ref<'a> { fn new(data: &'a str) -> Self { Ref { data } } }",
+        "fn Ref::new(data : String) -> Self {\n  { data: data }\n}",
+    );
+}
+
 // === New patterns ===
 
 #[test]

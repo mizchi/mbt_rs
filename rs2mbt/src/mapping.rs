@@ -15,7 +15,14 @@ pub fn lookup_type(name: &str) -> &str {
         "HashMap" => "Map",
         "Option" => "Option",
         "Result" => "Result",
-        "Box" => "Box",
+        "Box" => "",     // unwrap: Box<T> → T
+        "Rc" => "",      // unwrap: Rc<T> → T
+        "Arc" => "",     // unwrap: Arc<T> → T
+        "Cow" => "",     // unwrap: Cow<'_, T> → T
+        "Cell" => "",    // unwrap: Cell<T> → T
+        "RefCell" => "", // unwrap: RefCell<T> → T
+        "Mutex" => "",   // unwrap: Mutex<T> → T
+        "Pin" => "",     // unwrap: Pin<T> → T
         "usize" => "Int",
         "isize" => "Int",
         "str" => "String",

@@ -71,12 +71,18 @@ fn print_fn(buf: &mut String, f: &ItemFn, level: usize) {
 }
 
 fn print_generics(buf: &mut String, generics: &Generics) {
-    if generics.params.is_empty() {
+    // Filter out lifetime params
+    let type_params: Vec<_> = generics
+        .params
+        .iter()
+        .filter(|p| !matches!(p, GenericParam::Lifetime(_)))
+        .collect();
+    if type_params.is_empty() {
         return;
     }
     buf.push('[');
     let mut first = true;
-    for param in &generics.params {
+    for param in type_params {
         if !first {
             buf.push_str(", ");
         }
@@ -98,7 +104,7 @@ fn print_generics(buf: &mut String, generics: &Generics) {
                     }
                 }
             }
-            GenericParam::Lifetime(_) => buf.push_str("/* lifetime */"),
+            GenericParam::Lifetime(_) => {} // filtered above, shouldn't reach here
             GenericParam::Const(_) => buf.push_str("/* const generic */"),
         }
     }
@@ -145,20 +151,47 @@ fn print_type(buf: &mut String, ty: &Type) {
             if let Some(seg) = tp.path.segments.last() {
                 let ident_str = seg.ident.to_string();
                 let name = mapping::lookup_type(&ident_str);
-                buf.push_str(name);
-                if let PathArguments::AngleBracketed(args) = &seg.arguments {
-                    buf.push('[');
-                    let mut first = true;
-                    for arg in &args.args {
-                        if !first {
-                            buf.push_str(", ");
-                        }
-                        first = false;
-                        if let GenericArgument::Type(t) = arg {
-                            print_type(buf, t);
+                if name.is_empty() {
+                    // Wrapper type (Box, Rc, Arc, etc.) → unwrap to inner type
+                    if let PathArguments::AngleBracketed(args) = &seg.arguments {
+                        // Find first type argument, skip lifetimes
+                        for arg in &args.args {
+                            if let GenericArgument::Type(t) = arg {
+                                print_type(buf, t);
+                                return;
+                            }
                         }
                     }
-                    buf.push(']');
+                    // Fallback: print as-is
+                    buf.push_str(&ident_str);
+                } else {
+                    buf.push_str(name);
+                    if let PathArguments::AngleBracketed(args) = &seg.arguments {
+                        // Collect only type args, skip lifetime args
+                        let type_args: Vec<_> = args
+                            .args
+                            .iter()
+                            .filter_map(|a| {
+                                if let GenericArgument::Type(t) = a {
+                                    Some(t)
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        if !type_args.is_empty() {
+                            buf.push('[');
+                            let mut first = true;
+                            for t in type_args {
+                                if !first {
+                                    buf.push_str(", ");
+                                }
+                                first = false;
+                                print_type(buf, t);
+                            }
+                            buf.push(']');
+                        }
+                    }
                 }
             }
         }
@@ -179,8 +212,12 @@ fn print_type(buf: &mut String, ty: &Type) {
             }
         }
         Type::Reference(r) => {
-            // Drop reference, MoonBit is GC'd
+            // Drop reference (&T, &mut T), MoonBit is GC'd
             print_type(buf, &r.elem);
+        }
+        Type::Ptr(p) => {
+            // Drop raw pointer (*const T, *mut T), MoonBit is GC'd
+            print_type(buf, &p.elem);
         }
         Type::Slice(s) => {
             buf.push_str("Array[");
@@ -199,6 +236,22 @@ fn print_type(buf: &mut String, ty: &Type) {
             }
             buf.push_str(") -> ");
             print_return_type_inner(buf, &f.output);
+        }
+        Type::TraitObject(t) => {
+            // dyn Trait → just use the trait name
+            if let Some(TypeParamBound::Trait(tb)) = t.bounds.first() {
+                print_path(buf, &tb.path);
+            } else {
+                buf.push_str("_");
+            }
+        }
+        Type::ImplTrait(t) => {
+            // impl Trait → just use the trait name
+            if let Some(TypeParamBound::Trait(tb)) = t.bounds.first() {
+                print_path(buf, &tb.path);
+            } else {
+                buf.push_str("_");
+            }
         }
         Type::Infer(_) => buf.push('_'),
         _ => buf.push_str("_"),

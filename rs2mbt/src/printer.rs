@@ -147,6 +147,21 @@ fn print_fn(buf: &mut String, f: &ItemFn, level: usize) {
     buf.push(')');
     print_return_type(buf, &f.sig.output);
     buf.push_str(" {\n");
+    // Emit `let mut x = x` for mut params (MoonBit params are always immutable)
+    for arg in &f.sig.inputs {
+        if let FnArg::Typed(pat_type) = arg {
+            if let Pat::Ident(pi) = pat_type.pat.as_ref() {
+                if pi.mutability.is_some() {
+                    indent(buf, level + 1);
+                    buf.push_str("let mut ");
+                    buf.push_str(&pi.ident.to_string());
+                    buf.push_str(" = ");
+                    buf.push_str(&pi.ident.to_string());
+                    buf.push('\n');
+                }
+            }
+        }
+    }
     print_block_body(buf, &f.block, level + 1);
     buf.push('\n');
     indent(buf, level);
@@ -326,7 +341,15 @@ fn print_fn_params(buf: &mut String, inputs: &punctuated::Punctuated<FnArg, toke
         }
         first = false;
         match arg {
-            FnArg::Receiver(_) => buf.push_str("self"),
+            FnArg::Receiver(_) => {
+                let self_ty = get_self_type();
+                if !self_ty.is_empty() {
+                    buf.push_str("self : ");
+                    buf.push_str(&self_ty);
+                } else {
+                    buf.push_str("self");
+                }
+            }
             FnArg::Typed(pat_type) => {
                 print_pat(buf, &pat_type.pat, 0);
                 buf.push_str(" : ");
@@ -861,7 +884,10 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
                 print_expr(&mut p, &c.func, level);
                 p
             };
-            if let Some(literal) = mapping::lookup_constructor(&call_path) {
+            if mapping::is_string_constructor(&call_path) && c.args.len() == 1 {
+                // String::from("lit") → "lit"
+                print_expr(buf, &c.args[0], level);
+            } else if let Some(literal) = mapping::lookup_constructor(&call_path) {
                 // Type constructor → literal: Vec::new() → [], String::new() → ""
                 buf.push_str(literal);
             } else if mapping::is_wrapper_constructor(&call_path) && c.args.len() == 1 {
@@ -1263,12 +1289,39 @@ fn print_expr_macro(buf: &mut String, mac: &ExprMacro, level: usize) {
         print_macro_args(buf, &mac.mac.tokens, level);
         buf.push(']');
     } else if name == "format" {
-        // format!("...", args) → string interpolation
-        buf.push('"');
-        let tokens = mac.mac.tokens.to_string();
-        buf.push_str(&tokens);
-        buf.push('"');
-        buf.push_str(" // TODO: convert to string interpolation");
+        // format!("{} is {}", name, age) → "\{name} is \{age}"
+        let tokens = &mac.mac.tokens;
+        if let Ok(args) = syn::parse2::<syn::ExprTuple>(quote::quote!( (#tokens) )) {
+            let elems: Vec<_> = args.elems.iter().collect();
+            if let Some(Expr::Lit(ExprLit { lit: Lit::Str(fmt_str), .. })) = elems.first() {
+                let fmt = fmt_str.value();
+                let arg_exprs = &elems[1..];
+                let mut arg_idx = 0;
+                buf.push('"');
+                let mut chars = fmt.chars().peekable();
+                while let Some(ch) = chars.next() {
+                    if ch == '{' && chars.peek() == Some(&'}') {
+                        chars.next();
+                        buf.push_str("\\{");
+                        if arg_idx < arg_exprs.len() {
+                            print_expr(buf, arg_exprs[arg_idx], level);
+                            arg_idx += 1;
+                        }
+                        buf.push('}');
+                    } else {
+                        buf.push(ch);
+                    }
+                }
+                buf.push('"');
+            } else {
+                buf.push_str("\"\""); // fallback
+            }
+        } else if let Ok(expr) = syn::parse2::<Expr>(tokens.clone()) {
+            // format!("literal") with no args
+            print_expr(buf, &expr, level);
+        } else {
+            buf.push_str("\"\"");
+        }
     } else if name == "matches" {
         // matches!(expr, pattern) → expr is pattern
         let tokens = mac.mac.tokens.to_string();

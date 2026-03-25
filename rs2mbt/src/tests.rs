@@ -857,7 +857,7 @@ fn test_inherent_impl() {
 fn test_inherent_impl_method() {
     assert_rs2mbt(
         "impl Point { fn distance(&self) -> f64 { 0.0 } }",
-        "fn Point::distance(self) -> Double {\n  0.0\n}",
+        "fn Point::distance(self : Point) -> Double {\n  0.0\n}",
     );
 }
 

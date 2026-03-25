@@ -210,6 +210,12 @@ pub fn is_wrapper_type(name: &str) -> bool {
 }
 
 /// Check if a function call is a wrapper constructor that should be unwrapped.
+/// Check if a call is a string conversion that can be simplified.
+/// e.g., String::from("lit") → "lit", "lit".to_string() → "lit"
+pub fn is_string_constructor(path: &str) -> bool {
+    matches!(path, "String::from" | "String::to_string")
+}
+
 pub fn is_wrapper_constructor(path: &str) -> bool {
     matches!(
         path,
@@ -225,6 +231,7 @@ pub fn lookup_constructor(path: &str) -> Option<&str> {
         "Array::new" | "Vec::new" => Some("[]"),
         "String::new" => Some("\"\""),
         "Map::new" | "HashMap::new" => Some("{}"),
+        "Option::None" | "None" => Some("None"),
         _ => None,
     }
 }

@@ -677,7 +677,52 @@ fn print_impl(buf: &mut String, i: &ItemImpl, level: usize) {
         }
     }
     if let Some((_, path, _)) = &i.trait_ {
-        // impl Trait for Type { methods }
+        let trait_name = path.segments.last().map(|s| s.ident.to_string()).unwrap_or_default();
+
+        // Skip iterator-related trait impls (MoonBit Iter handles this automatically)
+        if matches!(trait_name.as_str(),
+            "Iterator" | "DoubleEndedIterator" | "ExactSizeIterator"
+        ) {
+            // Convert Iterator impl to iter() method
+            // impl Iterator for X { fn next(&mut self) -> Option<T> { ... } }
+            // → fn X::iter(self : X) -> Iter[T] { ... }  (comment only for now)
+            buf.push_str("// Iterator impl converted: use .iter() method or for-in loop\n");
+            clear_self_type();
+            return;
+        }
+
+        // Skip IntoIterator (MoonBit collections already support for-in)
+        if trait_name == "IntoIterator" {
+            buf.push_str("// IntoIterator: MoonBit collections support for-in natively\n");
+            clear_self_type();
+            return;
+        }
+
+        // Skip Clone/Copy impls (GC'd, not needed)
+        if matches!(trait_name.as_str(), "Clone" | "Copy") {
+            clear_self_type();
+            return;
+        }
+
+        // Skip From/Into when trivial
+        if matches!(trait_name.as_str(), "From" | "Into") {
+            // Still emit these as they may be useful
+        }
+
+        // Skip Extend/FromIterator (MoonBit has different collection building patterns)
+        if matches!(trait_name.as_str(), "Extend" | "FromIterator") {
+            buf.push_str("// Collection builder trait: use MoonBit Array methods directly\n");
+            clear_self_type();
+            return;
+        }
+
+        // Skip Index/IndexMut (MoonBit uses op_get/op_set)
+        if matches!(trait_name.as_str(), "Index" | "IndexMut") {
+            buf.push_str("// Index: MoonBit uses op_get/op_set for [] syntax\n");
+            clear_self_type();
+            return;
+        }
+
         for item in &i.items {
             if let ImplItem::Fn(method) = item {
                 buf.push_str("impl ");

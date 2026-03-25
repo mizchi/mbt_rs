@@ -1,0 +1,45 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "mizchi/mbt_rs/mbt2rs/src"
+
+import {
+  "moonbitlang/core/list",
+  "moonbitlang/parser/syntax",
+}
+
+// Values
+pub fn rust_is_unit_type(@syntax.Type) -> Bool
+
+pub fn rust_lookup_call(String) -> RustCallKind
+
+pub fn rust_lookup_derive(String) -> String
+
+pub fn rust_lookup_method(String) -> String
+
+pub fn rust_lookup_type(String) -> String
+
+pub fn rust_print_constant(StringBuilder, @syntax.Constant) -> Unit
+
+pub fn rust_print_expr(StringBuilder, @syntax.Expr, indent? : Int) -> Unit
+
+pub fn rust_print_pattern(StringBuilder, @syntax.Pattern) -> Unit
+
+pub fn rust_print_type(StringBuilder, @syntax.Type) -> Unit
+
+pub fn to_rust(@list.List[@syntax.Impl]) -> String
+
+// Errors
+
+// Types and methods
+pub enum RustCallKind {
+  Macro(String)
+  Func(String)
+  PrefixOp(String)
+  Statement(String)
+  None
+}
+pub impl Eq for RustCallKind
+
+// Type aliases
+
+// Traits
+

@@ -267,7 +267,7 @@ fn test_tuple() {
 fn test_array_literal() {
     assert_rs2mbt(
         "fn nums() -> Vec<i32> { vec![1, 2, 3] }",
-        "fn nums() -> Array[Int] {\n  [1 , 2 , 3]\n}",
+        "fn nums() -> Array[Int] {\n  [1, 2, 3]\n}",
     );
 }
 
@@ -403,7 +403,7 @@ fn test_try_operator() {
 fn test_assert_macro() {
     assert_rs2mbt(
         "fn check() { assert_eq!(1, 1); }",
-        "fn check() {\n  assert_eq(1 , 1)\n}",
+        "fn check() {\n  assert_eq(1, 1)\n}",
     );
 }
 
@@ -857,7 +857,7 @@ fn test_matches_macro() {
 fn test_while_let() {
     assert_rs2mbt(
         "fn drain(v: &mut Vec<i32>) { while let Some(x) = v.pop() { println!(\"{}\", x); } }",
-        "fn drain(v : Array[Int]) {\n  // while let → loop+match\n  while true {\n    match v.pop() {\n      Some(x) => {\n        println(\"{}\" , x)\n      }\n      _ => break\n    }\n  }\n}",
+        "fn drain(v : Array[Int]) {\n  // while let → loop+match\n  while true {\n    match v.pop() {\n      Some(x) => {\n        println(\"{}\", x)\n      }\n      _ => break\n    }\n  }\n}",
     );
 }
 

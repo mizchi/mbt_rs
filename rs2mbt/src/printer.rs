@@ -61,7 +61,15 @@ fn indent(buf: &mut String, level: usize) {
 
 fn print_item(buf: &mut String, item: &Item, level: usize) {
     match item {
-        Item::Fn(f) => print_fn(buf, f, level),
+        Item::Fn(f) => {
+            // Check for #[test] attribute → emit MoonBit test block
+            let is_test = f.attrs.iter().any(|a| a.path().is_ident("test"));
+            if is_test {
+                print_test_fn(buf, f, level);
+            } else {
+                print_fn(buf, f, level);
+            }
+        }
         Item::Struct(s) => print_struct(buf, s, level),
         Item::Enum(e) => print_enum(buf, e, level),
         Item::Type(t) => print_type_alias(buf, t, level),
@@ -83,6 +91,23 @@ fn print_item(buf: &mut String, item: &Item, level: usize) {
             buf.push_str("// TODO(transpile): unsupported item\n");
         }
     }
+}
+
+fn print_test_fn(buf: &mut String, f: &ItemFn, level: usize) {
+    indent(buf, level);
+    // Convert fn name: test_foo_bar → "foo bar"
+    let name = f.sig.ident.to_string();
+    let test_name = name
+        .strip_prefix("test_")
+        .unwrap_or(&name)
+        .replace('_', " ");
+    buf.push_str("test \"");
+    buf.push_str(&test_name);
+    buf.push_str("\" {\n");
+    print_block_body(buf, &f.block, level + 1);
+    buf.push('\n');
+    indent(buf, level);
+    buf.push('}');
 }
 
 fn print_visibility(buf: &mut String, vis: &Visibility) {
@@ -514,12 +539,19 @@ fn print_impl(buf: &mut String, i: &ItemImpl, level: usize) {
             }
         }
     } else {
-        // inherent impl: impl Type { methods } → fn Type::method(self, ...) { ... }
+        // inherent impl: impl<T> Type<T> { methods } → fn Type::method(self, ...) { ... }
         for item in &i.items {
             if let ImplItem::Fn(method) = item {
                 print_visibility(buf, &method.vis);
                 buf.push_str("fn ");
-                print_type(buf, &i.self_ty);
+                // Print type name without generic params for method definitions
+                if let Type::Path(tp) = i.self_ty.as_ref() {
+                    if let Some(seg) = tp.path.segments.last() {
+                        buf.push_str(&seg.ident.to_string());
+                    }
+                } else {
+                    print_type(buf, &i.self_ty);
+                }
                 buf.push_str("::");
                 buf.push_str(&method.sig.ident.to_string());
                 buf.push('(');
@@ -751,7 +783,17 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
                     print_expr(buf, guard, level);
                 }
                 buf.push_str(" => ");
-                print_expr(buf, &arm.body, level + 1);
+                // If arm body is a block, print with braces
+                match &*arm.body {
+                    Expr::Block(b) if b.block.stmts.len() > 1 => {
+                        buf.push_str("{\n");
+                        print_block_body(buf, &b.block, level + 2);
+                        buf.push('\n');
+                        indent(buf, level + 1);
+                        buf.push('}');
+                    }
+                    _ => print_expr(buf, &arm.body, level + 1),
+                }
                 buf.push('\n');
             }
             indent(buf, level);
@@ -980,19 +1022,37 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
     }
 }
 
-fn print_expr_macro(buf: &mut String, mac: &ExprMacro, _level: usize) {
+/// Try to parse macro tokens as comma-separated expressions and print them nicely.
+fn print_macro_args(buf: &mut String, tokens: &proc_macro2::TokenStream, level: usize) {
+    // Try to parse as comma-separated expressions (tuple-like)
+    if let Ok(args) = syn::parse2::<syn::ExprTuple>(quote::quote!( (#tokens) )) {
+        let mut first = true;
+        for arg in &args.elems {
+            if !first {
+                buf.push_str(", ");
+            }
+            first = false;
+            print_expr(buf, arg, level);
+        }
+    } else if let Ok(expr) = syn::parse2::<Expr>(tokens.clone()) {
+        // Single expression (e.g., assert!(expr))
+        print_expr(buf, &expr, level);
+    } else {
+        // Fallback: raw token string
+        buf.push_str(&tokens.to_string());
+    }
+}
+
+fn print_expr_macro(buf: &mut String, mac: &ExprMacro, level: usize) {
     let name = mac.mac.path.segments.last().map(|s| s.ident.to_string()).unwrap_or_default();
     if let Some(mbt_name) = mapping::lookup_macro(&name) {
         buf.push_str(mbt_name);
         buf.push('(');
-        // Parse macro tokens as comma-separated exprs
-        let tokens = mac.mac.tokens.to_string();
-        buf.push_str(&tokens);
+        print_macro_args(buf, &mac.mac.tokens, level);
         buf.push(')');
     } else if name == "vec" {
         buf.push('[');
-        let tokens = mac.mac.tokens.to_string();
-        buf.push_str(&tokens);
+        print_macro_args(buf, &mac.mac.tokens, level);
         buf.push(']');
     } else if name == "format" {
         // format!("...", args) → string interpolation
@@ -1025,19 +1085,17 @@ fn print_expr_macro(buf: &mut String, mac: &ExprMacro, _level: usize) {
     }
 }
 
-fn print_macro_stmt(buf: &mut String, mac: &StmtMacro, _level: usize) {
+fn print_macro_stmt(buf: &mut String, mac: &StmtMacro, level: usize) {
     let name = mac.mac.path.segments.last().map(|s| s.ident.to_string()).unwrap_or_default();
     if let Some(mbt_name) = mapping::lookup_macro(&name) {
         buf.push_str(mbt_name);
         buf.push('(');
-        let tokens = mac.mac.tokens.to_string();
-        buf.push_str(&tokens);
+        print_macro_args(buf, &mac.mac.tokens, level);
         buf.push(')');
     } else {
         buf.push_str(&name);
         buf.push('(');
-        let tokens = mac.mac.tokens.to_string();
-        buf.push_str(&tokens);
+        print_macro_args(buf, &mac.mac.tokens, level);
         buf.push(')');
     }
 }

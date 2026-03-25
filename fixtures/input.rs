@@ -160,6 +160,17 @@ fn find_ref(v: &Vec<i32>, key: i32) -> Option<&i32> {
     None
 }
 
+#[derive(Debug, PartialEq, Eq)]
+struct Rgb {
+    r: u8,
+    g: u8,
+    b: u8,
+}
+
+fn make_rgb(r: u8, g: u8, b: u8) -> Rgb {
+    Rgb { r, g, b }
+}
+
 fn rc_value(r: Rc<i32>) -> i32 {
     *r
 }

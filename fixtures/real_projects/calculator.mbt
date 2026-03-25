@@ -1,4 +1,3 @@
-derive(Show)
 pub enum Expr {
   Num(Double)
   Add(Expr, Expr)
@@ -7,11 +6,10 @@ pub enum Expr {
   Div(Expr, Expr)
   Neg(Expr)
   Var(String)
-}
-derive(Show)
+} derive(Show)
 pub struct Env {
   bindings : Array[(String, Double)]
-}
+} derive(Show)
 pub fn Env::new() -> Env {
   { bindings: Array::new() }
 }

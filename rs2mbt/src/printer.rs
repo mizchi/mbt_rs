@@ -489,8 +489,8 @@ fn print_return_type_inner(buf: &mut String, ret: &ReturnType) {
 }
 
 fn print_struct(buf: &mut String, s: &ItemStruct, level: usize) {
+    let derive_str = extract_derive_str(&s.attrs);
     indent(buf, level);
-    print_derive_attrs(buf, &s.attrs);
     print_visibility(buf, &s.vis);
     buf.push_str("struct ");
     buf.push_str(&s.ident.to_string());
@@ -524,11 +524,12 @@ fn print_struct(buf: &mut String, s: &ItemStruct, level: usize) {
         }
         Fields::Unit => {}
     }
+    buf.push_str(&derive_str);
 }
 
 fn print_enum(buf: &mut String, e: &ItemEnum, level: usize) {
+    let derive_str = extract_derive_str(&e.attrs);
     indent(buf, level);
-    print_derive_attrs(buf, &e.attrs);
     print_visibility(buf, &e.vis);
     buf.push_str("enum ");
     buf.push_str(&e.ident.to_string());
@@ -572,6 +573,7 @@ fn print_enum(buf: &mut String, e: &ItemEnum, level: usize) {
     }
     indent(buf, level);
     buf.push('}');
+    buf.push_str(&derive_str);
 }
 
 fn print_type_alias(buf: &mut String, t: &ItemType, level: usize) {
@@ -731,10 +733,10 @@ fn print_impl(buf: &mut String, i: &ItemImpl, level: usize) {
     clear_self_type();
 }
 
-fn print_derive_attrs(buf: &mut String, attrs: &[Attribute]) {
+/// Extract derive string from attributes. Returns e.g. " derive(Show, Eq)" or empty.
+fn extract_derive_str(attrs: &[Attribute]) -> String {
     for attr in attrs {
         if attr.path().is_ident("derive") {
-            // Parse derive traits
             let mut derives = Vec::new();
             let _ = attr.parse_nested_meta(|meta| {
                 let name = meta.path.get_ident().map(|i| i.to_string()).unwrap_or_default();
@@ -745,13 +747,11 @@ fn print_derive_attrs(buf: &mut String, attrs: &[Attribute]) {
                 Ok(())
             });
             if !derives.is_empty() {
-                buf.push_str("derive(");
-                buf.push_str(&derives.join(", "));
-                buf.push_str(")\n");
+                return format!(" derive({})", derives.join(", "));
             }
         }
     }
-    // Insert newline if any derive was printed
+    String::new()
 }
 
 fn print_path(buf: &mut String, path: &Path) {

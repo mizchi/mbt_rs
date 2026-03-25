@@ -94,6 +94,13 @@ test "find_ref: Option<&T> simplified" {
   assert_eq(result, None)
 }
 
+test "make_rgb: derive struct" {
+  let c = make_rgb(255, 0, 128)
+  assert_eq(c.r, 255)
+  assert_eq(c.g, 0)
+  assert_eq(c.b, 128)
+}
+
 test "rc_value: Rc stripped to Int" {
   assert_eq(rc_value(42), 42)
 }

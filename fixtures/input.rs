@@ -159,3 +159,11 @@ fn longer<'a>(a: &'a str, b: &'a str) -> &'a str {
 fn find_ref(v: &Vec<i32>, key: i32) -> Option<&i32> {
     None
 }
+
+fn rc_value(r: Rc<i32>) -> i32 {
+    *r
+}
+
+fn arc_pair(a: Arc<i32>, b: Arc<i32>) -> i32 {
+    *a + *b
+}

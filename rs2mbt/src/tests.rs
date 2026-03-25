@@ -487,18 +487,18 @@ fn test_box_in_struct() {
 }
 
 #[test]
-fn test_rc_unwrapped() {
+fn test_rc_stripped_with_note() {
     assert_rs2mbt(
         "fn get_val(r: Rc<String>) -> String { r.clone() }",
-        "fn get_val(r : String) -> String {\n  r.copy()\n}",
+        "// NOTE: The following Rust ownership/synchronization types were stripped\n// during conversion because MoonBit is garbage-collected:\n//   Rc<T> (shared ownership, reference counted) → T\n\nfn get_val(r : String) -> String {\n  r.copy()\n}",
     );
 }
 
 #[test]
-fn test_arc_unwrapped() {
+fn test_arc_stripped_with_note() {
     assert_rs2mbt(
         "fn get_val(a: Arc<i32>) -> i32 { *a }",
-        "fn get_val(a : Int) -> Int {\n  a\n}",
+        "// NOTE: The following Rust ownership/synchronization types were stripped\n// during conversion because MoonBit is garbage-collected:\n//   Arc<T> (thread-safe shared ownership) → T\n\nfn get_val(a : Int) -> Int {\n  a\n}",
     );
 }
 
@@ -551,10 +551,10 @@ fn test_cell_unwrapped() {
 }
 
 #[test]
-fn test_refcell_unwrapped() {
+fn test_refcell_stripped_with_note() {
     assert_rs2mbt(
         "fn borrow_val(r: RefCell<String>) -> String { r.borrow().clone() }",
-        "fn borrow_val(r : String) -> String {\n  r.borrow().copy()\n}",
+        "// NOTE: The following Rust ownership/synchronization types were stripped\n// during conversion because MoonBit is garbage-collected:\n//   RefCell<T> (interior mutability, runtime borrow check) → T\n\nfn borrow_val(r : String) -> String {\n  r.borrow().copy()\n}",
     );
 }
 

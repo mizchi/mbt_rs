@@ -93,3 +93,11 @@ test "find_ref: Option<&T> simplified" {
   let result : Option[Int] = find_ref([], 1)
   assert_eq(result, None)
 }
+
+test "rc_value: Rc stripped to Int" {
+  assert_eq(rc_value(42), 42)
+}
+
+test "arc_pair: Arc stripped to Int" {
+  assert_eq(arc_pair(10, 20), 30)
+}

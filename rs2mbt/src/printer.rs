@@ -1,14 +1,55 @@
 use crate::mapping;
+use std::cell::RefCell;
+use std::collections::BTreeSet;
 use syn::*;
+
+thread_local! {
+    /// Track wrapper types (Rc, Arc, RefCell, Mutex) used during conversion.
+    /// These will be emitted as type aliases at the top of the output.
+    static USED_WRAPPER_TYPES: RefCell<BTreeSet<String>> = RefCell::new(BTreeSet::new());
+}
+
+fn record_wrapper_type(name: &str) {
+    USED_WRAPPER_TYPES.with(|set| {
+        set.borrow_mut().insert(name.to_string());
+    });
+}
+
+fn take_wrapper_types() -> BTreeSet<String> {
+    USED_WRAPPER_TYPES.with(|set| std::mem::take(&mut *set.borrow_mut()))
+}
 
 /// Convert Rust source code to MoonBit source code.
 pub fn to_moonbit(rust_src: &str) -> String {
+    // Clear any leftover state
+    let _ = take_wrapper_types();
+
     let file = syn::parse_file(rust_src).expect("Failed to parse Rust source");
-    let mut buf = String::new();
+    let mut body = String::new();
     for item in &file.items {
-        print_item(&mut buf, item, 0);
+        print_item(&mut body, item, 0);
+        body.push('\n');
+    }
+
+    // Collect wrapper types used and generate aliases
+    let wrappers = take_wrapper_types();
+    let mut buf = String::new();
+    if !wrappers.is_empty() {
+        buf.push_str("// NOTE: The following Rust ownership/synchronization types were stripped\n");
+        buf.push_str("// during conversion because MoonBit is garbage-collected:\n");
+        for w in &wrappers {
+            let desc = match w.as_str() {
+                "Rc" => "Rc<T> (shared ownership, reference counted) → T",
+                "Arc" => "Arc<T> (thread-safe shared ownership) → T",
+                "RefCell" => "RefCell<T> (interior mutability, runtime borrow check) → T",
+                "Mutex" => "Mutex<T> (thread-safe interior mutability) → T",
+                _ => "",
+            };
+            buf.push_str(&format!("//   {desc}\n"));
+        }
         buf.push('\n');
     }
+    buf.push_str(&body);
     buf
 }
 
@@ -153,6 +194,10 @@ fn print_type(buf: &mut String, ty: &Type) {
                 let name = mapping::lookup_type(&ident_str);
                 if name.is_empty() {
                     // Wrapper type (Box, Rc, Arc, etc.) → unwrap to inner type
+                    // Record for documentation comment
+                    if mapping::is_wrapper_type(&ident_str) {
+                        record_wrapper_type(&ident_str);
+                    }
                     if let PathArguments::AngleBracketed(args) = &seg.arguments {
                         // Find first type argument, skip lifetimes
                         for arg in &args.args {

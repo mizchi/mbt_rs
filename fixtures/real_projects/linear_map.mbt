@@ -1,13 +1,3 @@
-
-
-
-
-
-
-
-
-
-
 pub struct LinearMap[K, V] {
   storage : Array[(K, V)]
 }
@@ -15,7 +5,7 @@ pub fn LinearMap::new() -> LinearMap {
   { storage: [] }
 }
 pub fn LinearMap::with_capacity(capacity : Int) -> LinearMap {
-  { storage: Array.with_capacity(capacity) }
+  { storage: Array::with_capacity(capacity) }
 }
 pub fn LinearMap::capacity(self) -> Int {
   self.storage.capacity()
@@ -38,7 +28,7 @@ pub fn LinearMap::is_empty(self) -> Bool {
 pub fn LinearMap::clear(self) {
   self.storage.clear()
 }
-pub fn LinearMap::retain(self, keep_fn : F) {
+pub fn LinearMap::retain(self, keep_fn : (K, V) -> Bool) {
   let mut del = 0
     let v = self.storage
   for i in 0..<v.length() {
@@ -72,7 +62,7 @@ pub fn LinearMap::values(self) -> Values[K, V] {
 }
 pub fn LinearMap::get(self, key : Q) -> Option[V] {
   for (k, v) in self {
-    if key == k.borrow() {
+    if key == k {
       return Some(v)
     }
   }
@@ -80,7 +70,7 @@ pub fn LinearMap::get(self, key : Q) -> Option[V] {
 }
 pub fn LinearMap::get_mut(self, key : Q) -> Option[V] {
   for (k, v) in self {
-    if key == k.borrow() {
+    if key == k {
       return Some(v)
     }
   }
@@ -100,7 +90,7 @@ pub fn LinearMap::insert(self, key : K, value : V) -> Option[V] {
 }
 pub fn LinearMap::remove(self, key : Q) -> Option[V] {
   for i in 0..<self.storage.length() {
-    if self.storage[i].0.borrow() == key {
+    if self.storage[i].0 == key {
       return Some(self.storage.swap_remove(i).1)
     }
   }
@@ -125,7 +115,7 @@ impl Debug for LinearMap[K, V] with fmt(self, f : Formatter) -> Result {
 }
 
 impl Default for LinearMap[K, V] with default(self) -> LinearMap {
-  Self.new()
+  LinearMap::new()
 }
 
 impl Extend for LinearMap[K, V] with extend(self, key_values : I) {
@@ -134,13 +124,13 @@ impl Extend for LinearMap[K, V] with extend(self, key_values : I) {
   }
 }
 
-impl iter.FromIterator for LinearMap[K, V] with from_iter(self, key_values : I) -> LinearMap {
-  let mut map = Self.new()
+impl iter::FromIterator for LinearMap[K, V] with from_iter(self, key_values : I) -> LinearMap {
+  let mut map = LinearMap::new()
   map.extend(key_values)
   map
 }
 
-impl ops.Index for LinearMap[K, V] with index(self, key : Q) -> V {
+impl ops::Index for LinearMap[K, V] with index(self, key : Q) -> V {
   self.get(key).expect("key not found")
 }
 
@@ -167,15 +157,15 @@ impl From for LinearMap[K, V] with from(self, other : Array[(K, V)]) -> LinearMa
 
 // TODO(transpile): unsupported item
 
-pub struct OccupiedEntry[K : , V : ] {
+pub struct OccupiedEntry[K, V] {
   map : LinearMap[K, V]
   index : Int
 }
-pub struct VacantEntry[K : , V : ] {
+pub struct VacantEntry[K, V] {
   map : LinearMap[K, V]
   key : K
 }
-pub enum Entry[K : , V : ] {
+pub enum Entry[K, V] {
   Occupied(OccupiedEntry[K, V])
   Vacant(VacantEntry[K, V])
 }
@@ -185,7 +175,7 @@ pub fn Entry::or_insert(self, default : V) -> V {
     Vacant(entry) => entry.insert(default)
   }
 }
-pub fn Entry::or_insert_with(self, default : F) -> V {
+pub fn Entry::or_insert_with(self, default : () -> V) -> V {
   match self {
     Occupied(entry) => entry.into_mut()
     Vacant(entry) => entry.insert(default())
@@ -202,7 +192,7 @@ pub fn OccupiedEntry::into_mut(self) -> V {
   self.map.storage[self.index].1
 }
 pub fn OccupiedEntry::insert(self, value : V) -> V {
-  mem.replace(self.get_mut(), value)
+  mem::replace(self.get_mut(), value)
 }
 pub fn OccupiedEntry::remove(self) -> V {
   self.map.storage.swap_remove(self.index).1
@@ -231,19 +221,19 @@ impl ExactSizeIterator for IntoIter[K, V] with len(self) -> Int {
   self.iter.length()
 }
 
-pub struct Drain[K : , V : ] {
+pub struct Drain[K, V] {
   iter : Drain[(K, V)]
 }
-pub struct Iter[K : , V : ] {
+pub struct Iter[K, V] {
   iter : Iter[(K, V)]
 }
-pub struct IterMut[K : , V : ] {
+pub struct IterMut[K, V] {
   iter : IterMut[(K, V)]
 }
-pub struct Keys[K : , V : ] {
+pub struct Keys[K, V] {
   iter : Iter[K, V]
 }
-pub struct Values[K : , V : ] {
+pub struct Values[K, V] {
   iter : Iter[K, V]
 }
 // TODO(transpile): unsupported item

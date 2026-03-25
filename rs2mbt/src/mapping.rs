@@ -46,6 +46,12 @@ pub fn lookup_method(name: &str) -> &str {
         "is_empty" => "is_empty",
         "unwrap" => "unwrap",
         "clone" => "copy",
+        "borrow" => "", // Borrow::borrow() → identity in GC'd language
+        "borrow_mut" => "",
+        "as_ref" => "",
+        "as_mut" => "",
+        "deref" => "",
+        "deref_mut" => "",
         _ => name,
     }
 }

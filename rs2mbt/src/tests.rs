@@ -19,7 +19,7 @@ fn test_simple_function() {
 fn test_pub_function() {
     assert_rs2mbt(
         "pub fn hello() -> String { String::new() }",
-        "pub fn hello() -> String {\n  String.new()\n}",
+        "pub fn hello() -> String {\n  String::new()\n}",
     );
 }
 
@@ -554,7 +554,7 @@ fn test_cell_unwrapped() {
 fn test_refcell_stripped_with_note() {
     assert_rs2mbt(
         "fn borrow_val(r: RefCell<String>) -> String { r.borrow().clone() }",
-        "// NOTE: The following Rust ownership/synchronization types were stripped\n// during conversion because MoonBit is garbage-collected:\n//   RefCell<T> (interior mutability, runtime borrow check) → T\n\nfn borrow_val(r : String) -> String {\n  r.borrow().copy()\n}",
+        "// NOTE: The following Rust ownership/synchronization types were stripped\n// during conversion because MoonBit is garbage-collected:\n//   RefCell<T> (interior mutability, runtime borrow check) → T\n\nfn borrow_val(r : String) -> String {\n  r.copy()\n}",
     );
 }
 
@@ -613,7 +613,7 @@ fn test_if_let_is_pattern() {
 fn test_self_resolved_in_impl() {
     assert_rs2mbt(
         "impl Stack { fn new() -> Self { Stack { elements: Vec::new() } } }",
-        "fn Stack::new() -> Stack {\n  { elements: Array.new() }\n}",
+        "fn Stack::new() -> Stack {\n  { elements: Array::new() }\n}",
     );
 }
 
@@ -973,6 +973,6 @@ fn test_complex_match_body() {
                 _ => 0,
             }
         }"#,
-        "fn eval(expr : Expr) -> Int {\n  match expr {\n    Expr.Lit(n) => n\n    Expr.Add(a, b) => eval(a) + eval(b)\n    _ => 0\n  }\n}",
+        "fn eval(expr : Expr) -> Int {\n  match expr {\n    Expr::Lit(n) => n\n    Expr::Add(a, b) => eval(a) + eval(b)\n    _ => 0\n  }\n}",
     );
 }

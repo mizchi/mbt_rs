@@ -62,7 +62,9 @@ pub fn to_moonbit(rust_src: &str) -> String {
         }
         buf.push('\n');
     }
-    buf.push_str(&body);
+    // Trim leading empty lines from skipped items (use, cfg, etc.)
+    let trimmed = body.trim_start_matches('\n');
+    buf.push_str(trimmed);
     buf
 }
 
@@ -132,6 +134,8 @@ fn print_visibility(buf: &mut String, vis: &Visibility) {
 }
 
 fn print_fn(buf: &mut String, f: &ItemFn, level: usize) {
+    // Extract where clause fn types for parameter resolution
+    set_where_fn_types(extract_where_fn_types(&f.sig.generics));
     indent(buf, level);
     print_visibility(buf, &f.vis);
     buf.push_str("fn");
@@ -169,17 +173,31 @@ fn print_generics(buf: &mut String, generics: &Generics) {
         match param {
             GenericParam::Type(t) => {
                 buf.push_str(&t.ident.to_string());
-                if !t.bounds.is_empty() {
+                // Filter out lifetime bounds and ?Sized, keep only trait bounds
+                let trait_bounds: Vec<_> = t
+                    .bounds
+                    .iter()
+                    .filter_map(|b| {
+                        if let TypeParamBound::Trait(tb) = b {
+                            // Skip ?Sized
+                            if matches!(tb.modifier, TraitBoundModifier::Maybe(_)) {
+                                return None;
+                            }
+                            Some(tb)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                if !trait_bounds.is_empty() {
                     buf.push_str(" : ");
                     let mut first_bound = true;
-                    for bound in &t.bounds {
+                    for tb in trait_bounds {
                         if !first_bound {
                             buf.push_str(" + ");
                         }
                         first_bound = false;
-                        if let TypeParamBound::Trait(tb) = bound {
-                            print_path(buf, &tb.path);
-                        }
+                        print_path(buf, &tb.path);
                     }
                 }
             }
@@ -188,6 +206,116 @@ fn print_generics(buf: &mut String, generics: &Generics) {
         }
     }
     buf.push(']');
+}
+
+/// Extract where clause Fn/FnMut/FnOnce bounds as a map from type param name to closure type string.
+fn extract_where_fn_types(generics: &Generics) -> std::collections::HashMap<String, String> {
+    let mut map = std::collections::HashMap::new();
+    if let Some(where_clause) = &generics.where_clause {
+        for pred in &where_clause.predicates {
+            if let WherePredicate::Type(pt) = pred {
+                let param_name = pt.bounded_ty.to_token_stream().to_string();
+                for bound in &pt.bounds {
+                    if let TypeParamBound::Trait(tb) = bound {
+                        let trait_name = tb
+                            .path
+                            .segments
+                            .last()
+                            .map(|s| s.ident.to_string())
+                            .unwrap_or_default();
+                        if matches!(trait_name.as_str(), "Fn" | "FnMut" | "FnOnce") {
+                            // Extract (Args) -> Ret from the parenthesized arguments
+                            if let Some(seg) = tb.path.segments.last() {
+                                if let PathArguments::Parenthesized(paren) = &seg.arguments {
+                                    let mut fn_type = String::new();
+                                    fn_type.push('(');
+                                    let mut first = true;
+                                    for input in &paren.inputs {
+                                        if !first {
+                                            fn_type.push_str(", ");
+                                        }
+                                        first = false;
+                                        let mut tbuf = String::new();
+                                        print_type(&mut tbuf, input);
+                                        fn_type.push_str(&tbuf);
+                                    }
+                                    fn_type.push_str(") -> ");
+                                    match &paren.output {
+                                        ReturnType::Default => fn_type.push_str("Unit"),
+                                        ReturnType::Type(_, ty) => {
+                                            let mut tbuf = String::new();
+                                            print_type(&mut tbuf, ty);
+                                            fn_type.push_str(&tbuf);
+                                        }
+                                    }
+                                    map.insert(param_name.clone(), fn_type);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Also check generic params directly for bounds like F: FnMut(...)
+    for param in &generics.params {
+        if let GenericParam::Type(t) = param {
+            let param_name = t.ident.to_string();
+            for bound in &t.bounds {
+                if let TypeParamBound::Trait(tb) = bound {
+                    let trait_name = tb
+                        .path
+                        .segments
+                        .last()
+                        .map(|s| s.ident.to_string())
+                        .unwrap_or_default();
+                    if matches!(trait_name.as_str(), "Fn" | "FnMut" | "FnOnce") {
+                        if let Some(seg) = tb.path.segments.last() {
+                            if let PathArguments::Parenthesized(paren) = &seg.arguments {
+                                let mut fn_type = String::new();
+                                fn_type.push('(');
+                                let mut first = true;
+                                for input in &paren.inputs {
+                                    if !first {
+                                        fn_type.push_str(", ");
+                                    }
+                                    first = false;
+                                    let mut tbuf = String::new();
+                                    print_type(&mut tbuf, input);
+                                    fn_type.push_str(&tbuf);
+                                }
+                                fn_type.push_str(") -> ");
+                                match &paren.output {
+                                    ReturnType::Default => fn_type.push_str("Unit"),
+                                    ReturnType::Type(_, ty) => {
+                                        let mut tbuf = String::new();
+                                        print_type(&mut tbuf, ty);
+                                        fn_type.push_str(&tbuf);
+                                    }
+                                }
+                                map.insert(param_name.clone(), fn_type);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    map
+}
+
+thread_local! {
+    /// Where clause Fn type mappings for the current function.
+    static WHERE_FN_TYPES: RefCell<std::collections::HashMap<String, String>> =
+        RefCell::new(std::collections::HashMap::new());
+}
+
+fn set_where_fn_types(map: std::collections::HashMap<String, String>) {
+    WHERE_FN_TYPES.with(|m| *m.borrow_mut() = map);
+}
+
+fn get_where_fn_type(name: &str) -> Option<String> {
+    WHERE_FN_TYPES.with(|m| m.borrow().get(name).cloned())
 }
 
 fn print_fn_params(buf: &mut String, inputs: &punctuated::Punctuated<FnArg, token::Comma>) {
@@ -236,6 +364,11 @@ fn print_type(buf: &mut String, ty: &Type) {
                 } else {
                     ident_str
                 };
+                // Check if this is a where-clause Fn type parameter (F: FnMut(...) -> ...)
+                if let Some(fn_type) = get_where_fn_type(&ident_str) {
+                    buf.push_str(&fn_type);
+                    return;
+                }
                 let name = mapping::lookup_type(&ident_str);
                 if name.is_empty() {
                     // Wrapper type (Box, Rc, Arc, etc.) → unwrap to inner type
@@ -568,6 +701,8 @@ fn print_impl(buf: &mut String, i: &ItemImpl, level: usize) {
         // inherent impl: impl<T> Type<T> { methods } → fn Type::method(self, ...) { ... }
         for item in &i.items {
             if let ImplItem::Fn(method) = item {
+                // Set where clause fn types for this method
+                set_where_fn_types(extract_where_fn_types(&method.sig.generics));
                 print_visibility(buf, &method.vis);
                 buf.push_str("fn ");
                 // Print type name without generic params for method definitions
@@ -623,10 +758,21 @@ fn print_path(buf: &mut String, path: &Path) {
     let mut first = true;
     for seg in &path.segments {
         if !first {
-            buf.push('.');
+            buf.push_str("::");
         }
         first = false;
         let seg_str = seg.ident.to_string();
+        // Resolve Self
+        let seg_str = if seg_str == "Self" {
+            let self_ty = get_self_type();
+            if !self_ty.is_empty() {
+                self_ty
+            } else {
+                seg_str
+            }
+        } else {
+            seg_str
+        };
         let name = mapping::lookup_type(&seg_str);
         buf.push_str(name);
     }
@@ -726,21 +872,26 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
             buf.push(')');
         }
         Expr::MethodCall(m) => {
-            print_expr(buf, &m.receiver, level);
-            buf.push('.');
             let method_str = m.method.to_string();
             let method = mapping::lookup_method(&method_str);
-            buf.push_str(method);
-            buf.push('(');
-            let mut first = true;
-            for arg in &m.args {
-                if !first {
-                    buf.push_str(", ");
+            if method.is_empty() {
+                // Identity method (borrow, as_ref, deref) → just print receiver
+                print_expr(buf, &m.receiver, level);
+            } else {
+                print_expr(buf, &m.receiver, level);
+                buf.push('.');
+                buf.push_str(method);
+                buf.push('(');
+                let mut first = true;
+                for arg in &m.args {
+                    if !first {
+                        buf.push_str(", ");
+                    }
+                    first = false;
+                    print_expr(buf, arg, level);
                 }
-                first = false;
-                print_expr(buf, arg, level);
+                buf.push(')');
             }
-            buf.push(')');
         }
         Expr::If(i) => {
             // if let Some(x) = expr → if expr is Some(x) { ... } else { ... }

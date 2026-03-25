@@ -285,41 +285,141 @@ fn any_zero(a: i32, b: i32, c: i32) -> bool {
     a == 0 || b == 0 || c == 0
 }
 
-#[test]
-fn test_apply() {
-    assert_eq!(apply(|x| x * 2, 5), 10);
+// === Basic syntax patterns ===
+
+// return early
+fn check_positive(x: i32) -> i32 {
+    if x <= 0 {
+        return 0;
+    }
+    x * 2
 }
 
-#[test]
-fn test_extract_opt() {
-    assert_eq!(extract_opt(Some(42)), 42);
-    assert_eq!(extract_opt(None), 0);
+// typed let binding
+fn typed_let() -> i32 {
+    let x: i32 = 42;
+    let y: i32 = x + 8;
+    y
 }
 
-#[test]
-fn test_sign() {
-    assert_eq!(sign(5), 1);
-    assert_eq!(sign(-3), -1);
-    assert_eq!(sign(0), 0);
+// nested match
+fn nested_match(x: Option<Option<i32>>) -> i32 {
+    match x {
+        Some(inner) => match inner {
+            Some(v) => v,
+            None => -1,
+        },
+        None => -2,
+    }
 }
 
-#[test]
-fn test_fizzbuzz() {
-    assert_eq!(fizzbuzz(15), 0);
-    assert_eq!(fizzbuzz(3), 1);
-    assert_eq!(fizzbuzz(5), 2);
-    assert_eq!(fizzbuzz(7), 3);
+// string and char
+fn greeting() -> String {
+    "hello".to_string()
 }
 
-#[test]
-fn test_quadratic() {
-    // f(x) = 2x^2 + 3x + 1, f(2) = 8 + 6 + 1 = 15
-    assert_eq!(quadratic(2.0, 3.0, 1.0, 2.0), 15.0);
+fn initial() -> char {
+    'A'
 }
 
-#[test]
-fn test_all_positive() {
-    assert!(all_positive(1, 2, 3));
-    assert!(!all_positive(1, -2, 3));
+// numeric literals
+fn int64_val() -> i64 {
+    123456789i64
 }
 
+fn float_val() -> f64 {
+    3.14159
+}
+
+fn uint_val() -> u32 {
+    42u32
+}
+
+// array operations
+fn get_second(arr: Vec<i32>) -> i32 {
+    arr[1]
+}
+
+// field access and struct creation
+fn make_point(x: i32, y: i32) -> Point {
+    Point { x, y }
+}
+
+fn get_point_x(p: Point) -> i32 {
+    p.x
+}
+
+// empty function
+fn noop() {}
+
+// multiple return values
+fn min_max(a: i32, b: i32) -> (i32, i32) {
+    if a < b {
+        (a, b)
+    } else {
+        (b, a)
+    }
+}
+
+// tuple access
+fn first(pair: (i32, i32)) -> i32 {
+    pair.0
+}
+
+fn second(pair: (i32, i32)) -> i32 {
+    pair.1
+}
+
+// simple recursion
+fn factorial(n: i32) -> i32 {
+    if n <= 1 {
+        1
+    } else {
+        n * factorial(n - 1)
+    }
+}
+
+// multiple if-else
+fn grade(score: i32) -> i32 {
+    if score >= 90 {
+        5
+    } else if score >= 80 {
+        4
+    } else if score >= 70 {
+        3
+    } else if score >= 60 {
+        2
+    } else {
+        1
+    }
+}
+
+// generic struct
+struct Pair<A, B> {
+    first: A,
+    second: B,
+}
+
+fn make_pair(a: i32, b: String) -> Pair<i32, String> {
+    Pair { first: a, second: b }
+}
+
+fn get_pair_first(p: Pair<i32, String>) -> i32 {
+    p.first
+}
+
+// or pattern in match
+fn is_vowel(c: char) -> bool {
+    match c {
+        'a' | 'e' | 'i' | 'o' | 'u' => true,
+        _ => false,
+    }
+}
+
+// deeply nested expression
+fn complex_calc(a: i32, b: i32, c: i32) -> i32 {
+    let sum = a + b + c;
+    let avg = sum / 3;
+    let diff = if a > b { a - b } else { b - a };
+    avg + diff
+}

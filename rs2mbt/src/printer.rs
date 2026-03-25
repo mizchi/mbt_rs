@@ -338,14 +338,10 @@ fn print_fn_params(buf: &mut String, inputs: &punctuated::Punctuated<FnArg, toke
 
 fn print_return_type(buf: &mut String, ret: &ReturnType) {
     match ret {
-        ReturnType::Default => {}
+        ReturnType::Default => {
+            buf.push_str(" -> Unit");
+        }
         ReturnType::Type(_, ty) => {
-            // Check if return type is ()
-            if let Type::Tuple(t) = ty.as_ref() {
-                if t.elems.is_empty() {
-                    return; // Unit → omit
-                }
-            }
             buf.push_str(" -> ");
             print_type(buf, ty);
         }

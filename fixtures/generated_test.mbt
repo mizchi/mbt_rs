@@ -110,7 +110,8 @@ test "arc_pair: Arc stripped to Int" {
 }
 
 test "apply: closure param" {
-  assert_eq(apply(fn(x) { x * 2 }, 5), 10)
+  let double = fn(x : Int) -> Int { x * 2 }
+  assert_eq(apply(double, 5), 10)
 }
 
 test "extract_opt: if let → is" {
@@ -143,5 +144,85 @@ test "all_positive: bool ops" {
 test "any_zero: bool ops" {
   assert_eq(any_zero(1, 0, 3), true)
   assert_eq(any_zero(1, 2, 3), false)
+}
+
+test "check_positive: return early" {
+  assert_eq(check_positive(5), 10)
+  assert_eq(check_positive(-3), 0)
+  assert_eq(check_positive(0), 0)
+}
+
+test "typed_let" {
+  assert_eq(typed_let(), 50)
+}
+
+test "nested_match" {
+  assert_eq(nested_match(Some(Some(42))), 42)
+  assert_eq(nested_match(Some(None)), -1)
+  assert_eq(nested_match(None), -2)
+}
+
+test "int64_val" {
+  assert_eq(int64_val(), 123456789L)
+}
+
+test "float_val" {
+  assert_true(float_val() > 3.14)
+}
+
+test "noop" {
+  noop()
+}
+
+test "min_max" {
+  assert_eq(min_max(3, 7), (3, 7))
+  assert_eq(min_max(9, 2), (2, 9))
+}
+
+test "tuple access" {
+  assert_eq(first((10, 20)), 10)
+  assert_eq(second((10, 20)), 20)
+}
+
+test "factorial" {
+  assert_eq(factorial(5), 120)
+  assert_eq(factorial(0), 1)
+}
+
+test "grade" {
+  assert_eq(grade(95), 5)
+  assert_eq(grade(85), 4)
+  assert_eq(grade(55), 1)
+}
+
+test "is_vowel" {
+  assert_eq(is_vowel('a'), true)
+  assert_eq(is_vowel('b'), false)
+}
+
+test "complex_calc" {
+  assert_eq(complex_calc(10, 20, 30), 30)
+}
+
+test "make_point" {
+  let p = make_point(3, 4)
+  assert_eq(get_point_x(p), 3)
+}
+
+test "get_second" {
+  assert_eq(get_second([10, 20, 30]), 20)
+}
+
+test "greeting" {
+  assert_eq(greeting(), "hello")
+}
+
+test "initial" {
+  assert_eq(initial(), 'A')
+}
+
+test "make_pair" {
+  let p = make_pair(1, "hello")
+  assert_eq(get_pair_first(p), 1)
 }
 

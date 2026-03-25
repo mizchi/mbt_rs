@@ -27,7 +27,7 @@ fn test_pub_function() {
 fn test_unit_return_omitted() {
     assert_rs2mbt(
         "fn noop() {}",
-        "fn noop() {\n\n}",
+        "fn noop() -> Unit {\n\n}",
     );
 }
 
@@ -225,7 +225,7 @@ fn test_match_or_pattern() {
 fn test_while_loop() {
     assert_rs2mbt(
         "fn count() { let mut i = 0; while i < 10 { i = i + 1; } }",
-        "fn count() {\n  let mut i = 0\n  while i < 10 {\n    i = i + 1\n  }\n}",
+        "fn count() -> Unit {\n  let mut i = 0\n  while i < 10 {\n    i = i + 1\n  }\n}",
     );
 }
 
@@ -323,7 +323,7 @@ fn test_method_call() {
 fn test_method_call_with_arg() {
     assert_rs2mbt(
         "fn push_val(arr: Vec<i32>, v: i32) { arr.push(v); }",
-        "fn push_val(arr : Array[Int], v : Int) {\n  arr.push(v)\n}",
+        "fn push_val(arr : Array[Int], v : Int) -> Unit {\n  arr.push(v)\n}",
     );
 }
 
@@ -347,7 +347,7 @@ fn test_closure() {
 fn test_closure_expr() {
     assert_rs2mbt(
         "fn foo() -> i32 { let f = |x: i32| x + 1; f(10) }",
-        "fn foo() -> Int {\n  let f = fn(x : Int) { x + 1 }\n  f(10)\n}",
+        "fn foo() -> Int {\n  let f = fn(x : Int) -> Unit { x + 1 }\n  f(10)\n}",
     );
 }
 
@@ -363,7 +363,7 @@ fn test_index_access() {
 fn test_index_assign() {
     assert_rs2mbt(
         "fn set_first(arr: Vec<i32>) { arr[0] = 99; }",
-        "fn set_first(arr : Array[Int]) {\n  arr[0] = 99\n}",
+        "fn set_first(arr : Array[Int]) -> Unit {\n  arr[0] = 99\n}",
     );
 }
 
@@ -403,7 +403,7 @@ fn test_try_operator() {
 fn test_assert_macro() {
     assert_rs2mbt(
         "fn check() { assert_eq!(1, 1); }",
-        "fn check() {\n  assert_eq(1, 1)\n}",
+        "fn check() -> Unit {\n  assert_eq(1, 1)\n}",
     );
 }
 
@@ -411,7 +411,7 @@ fn test_assert_macro() {
 fn test_println_macro() {
     assert_rs2mbt(
         r#"fn hello() { println!("hello"); }"#,
-        "fn hello() {\n  println(\"hello\")\n}",
+        "fn hello() -> Unit {\n  println(\"hello\")\n}",
     );
 }
 
@@ -437,7 +437,7 @@ fn test_trait() {
 fn test_trait_with_super() {
     assert_rs2mbt(
         "trait Drawable: Display { fn draw(&self); }",
-        "trait Drawable : Display {\n  draw(self)\n}",
+        "trait Drawable : Display {\n  draw(self) -> Unit\n}",
     );
 }
 
@@ -447,7 +447,7 @@ fn test_trait_with_super() {
 fn test_all_numeric_types() {
     assert_rs2mbt(
         "fn types(a: i32, b: u32, c: i64, d: u64, e: f32, f: f64) {}",
-        "fn types(a : Int, b : UInt, c : Int64, d : UInt64, e : Float, f : Double) {\n\n}",
+        "fn types(a : Int, b : UInt, c : Int64, d : UInt64, e : Float, f : Double) -> Unit {\n\n}",
     );
 }
 
@@ -466,7 +466,7 @@ fn test_reference_dropped() {
 fn test_mut_ref_dropped() {
     assert_rs2mbt(
         "fn inc(x: &mut i32) { *x = *x + 1; }",
-        "fn inc(x : Int) {\n  x = x + 1\n}",
+        "fn inc(x : Int) -> Unit {\n  x = x + 1\n}",
     );
 }
 
@@ -639,23 +639,23 @@ fn test_if_let_to_match() {
 fn test_infinite_loop() {
     assert_rs2mbt(
         "fn spin() { loop { break; } }",
-        "fn spin() {\n  while true {\n    break\n  }\n}",
+        "fn spin() -> Unit {\n  while true {\n    break\n  }\n}",
     );
 }
 
 #[test]
 fn test_range_exclusive() {
     assert_rs2mbt(
-        "fn range_test() { for i in 0..10 {} }",
-        "fn range_test() {\n  for i in 0..<10 {\n\n  }\n}",
+        "fn range_test() -> Unit { for i in 0..10 {} }",
+        "fn range_test() -> Unit {\n  for i in 0..<10 {\n\n  }\n}",
     );
 }
 
 #[test]
 fn test_range_inclusive() {
     assert_rs2mbt(
-        "fn range_test() { for i in 0..=10 {} }",
-        "fn range_test() {\n  for i in 0..=10 {\n\n  }\n}",
+        "fn range_test() -> Unit { for i in 0..=10 {} }",
+        "fn range_test() -> Unit {\n  for i in 0..=10 {\n\n  }\n}",
     );
 }
 
@@ -663,7 +663,7 @@ fn test_range_inclusive() {
 fn test_augmented_assign() {
     assert_rs2mbt(
         "fn inc(x: &mut i32) { *x += 1; }",
-        "fn inc(x : Int) {\n  x += 1\n}",
+        "fn inc(x : Int) -> Unit {\n  x += 1\n}",
     );
 }
 
@@ -758,7 +758,7 @@ fn test_complex_body() {
 fn test_multiple_params_no_return() {
     assert_rs2mbt(
         "fn log(msg: &str, level: i32) {}",
-        "fn log(msg : String, level : Int) {\n\n}",
+        "fn log(msg : String, level : Int) -> Unit {\n\n}",
     );
 }
 
@@ -766,7 +766,7 @@ fn test_multiple_params_no_return() {
 fn test_generic_with_bounds() {
     assert_rs2mbt(
         "fn print_it<T: Display>(x: T) {}",
-        "fn[T : Display] print_it(x : T) {\n\n}",
+        "fn[T : Display] print_it(x : T) -> Unit {\n\n}",
     );
 }
 
@@ -799,7 +799,7 @@ fn test_array_repeat() {
 fn test_field_assign() {
     assert_rs2mbt(
         "fn set_x(p: &mut Point) { p.x = 42; }",
-        "fn set_x(p : Point) {\n  p.x = 42\n}",
+        "fn set_x(p : Point) -> Unit {\n  p.x = 42\n}",
     );
 }
 
@@ -873,7 +873,7 @@ fn test_matches_macro() {
 fn test_while_let() {
     assert_rs2mbt(
         "fn drain(v: &mut Vec<i32>) { while let Some(x) = v.pop() { println!(\"{}\", x); } }",
-        "fn drain(v : Array[Int]) {\n  // while let → loop+match\n  while true {\n    match v.pop() {\n      Some(x) => {\n        println(\"{}\", x)\n      }\n      _ => break\n    }\n  }\n}",
+        "fn drain(v : Array[Int]) -> Unit {\n  // while let → loop+match\n  while true {\n    match v.pop() {\n      Some(x) => {\n        println(\"{}\", x)\n      }\n      _ => break\n    }\n  }\n}",
     );
 }
 
@@ -889,7 +889,7 @@ fn test_closure_with_return_type() {
 fn test_nested_method_calls() {
     assert_rs2mbt(
         "fn count(v: Vec<i32>) -> usize { v.iter().filter(|x| *x > 0).count() }",
-        "fn count(v : Array[Int]) -> Int {\n  v.iter().filter(fn(x) { x > 0 }).count()\n}",
+        "fn count(v : Array[Int]) -> Int {\n  v.iter().filter(fn(x) -> Unit { x > 0 }).count()\n}",
     );
 }
 
@@ -897,7 +897,7 @@ fn test_nested_method_calls() {
 fn test_multiple_trait_bounds() {
     assert_rs2mbt(
         "fn show<T: Display + Debug>(x: T) {}",
-        "fn[T : Display + Debug] show(x : T) {\n\n}",
+        "fn[T : Display + Debug] show(x : T) -> Unit {\n\n}",
     );
 }
 

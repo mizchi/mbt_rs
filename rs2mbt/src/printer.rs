@@ -1250,9 +1250,8 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
             print_expr(buf, &g.expr, level);
         }
         Expr::Await(a) => {
-            // expr.await → expr.await!  (MoonBit async)
+            // expr.await → expr (MoonBit async doesn't need await/suffix)
             print_expr(buf, &a.base, level);
-            buf.push_str(".await!"); // TODO: check MoonBit async syntax when stabilized
         }
         Expr::Async(a) => {
             // async { block } → async { block }

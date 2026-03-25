@@ -40,7 +40,7 @@ tokio と moonbitlang/async は共に「async fn + await + タスクスポーン
 | Rust (tokio) | MoonBit (moonbitlang/async) | 変換難易度 |
 |---|---|---|
 | `async fn foo() -> T` | `async fn foo() -> T` | 低 (キーワード同じ) |
-| `foo().await` | `foo().await` / `foo()!` | 低 |
+| `foo().await` | `foo()` | 低 (MoonBit は await 不要、普通に呼ぶ) |
 | `#[tokio::main] async fn main()` | `fn main { @async.run(async_main) }` | 中 (エントリポイント変換) |
 | `tokio::spawn(async { ... })` | `@async.spawn(async { ... })` | 低〜中 |
 | `tokio::join!(a, b)` | `@async.join(a, b)` | 中 |
@@ -53,7 +53,7 @@ tokio と moonbitlang/async は共に「async fn + await + タスクスポーン
 ### 変換戦略
 
 1. `#[tokio::main]` → `fn main { @async.run(...) }` ラッパー生成
-2. `.await` → MoonBit の `!` サフィックスまたは `await`
+2. `.await` → 除去 (MoonBit は await 不要)
 3. `tokio::spawn` → `@async.spawn`
 4. `tokio::sync::*` → GC 前提で簡略化 (Mutex → 除去, channel → @channel)
 5. エラー型: `Result<T, Box<dyn Error>>` → `T!Error`

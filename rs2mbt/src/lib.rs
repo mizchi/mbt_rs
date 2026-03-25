@@ -5,3 +5,5 @@ pub use printer::to_moonbit;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod roundtrip;

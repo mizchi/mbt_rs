@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mbt:
+    name: MoonBit (lint + test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup just
+        uses: extractions/setup-just@v3
+      - name: Install MoonBit CLI
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Moon version
+        run: moon version --all
+      - name: Moon update
+        run: moon update
+      - name: Format check
+        run: just fmt-check
+      - name: Interface check
+        run: just info-check
+      - name: Type check
+        run: just check
+      - name: MoonBit tests (mbt2rs + roundtrip)
+        run: just test
+
+  rust:
+    name: Rust (rs2mbt + roundtrip)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Rust toolchain
+        run: rustc --version && cargo --version
+      - name: rs2mbt tests
+        run: cargo test --manifest-path rs2mbt/Cargo.toml
+
+  cross-validation:
+    name: Cross-validation (rs2mbt → moon check)
+    needs: [mbt, rust]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup just
+        uses: extractions/setup-just@v3
+      - name: Install MoonBit CLI
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Moon update
+        run: moon update
+      - name: Rust toolchain
+        run: rustc --version && cargo --version
+      - name: Cross-validate (Rust → MoonBit → moon check + moon test)
+        run: just moon-check-rs2mbt

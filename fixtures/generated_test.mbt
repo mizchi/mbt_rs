@@ -226,3 +226,92 @@ test "make_pair" {
   assert_eq(get_pair_first(p), 1)
 }
 
+test "always_true" {
+  assert_eq(always_true(), true)
+}
+
+test "always_false" {
+  assert_eq(always_false(), false)
+}
+
+test "compare" {
+  assert_eq(compare(1, 1), true)
+  assert_eq(compare(1, 2), true)
+}
+
+test "three_nums" {
+  assert_eq(three_nums(), [10, 20, 30])
+}
+
+test "maybe_val" {
+  assert_eq(maybe_val(true), Some(42))
+  assert_eq(maybe_val(false), None)
+}
+
+test "leaf" {
+  let n = leaf(5)
+  assert_eq(n.value, 5)
+}
+
+test "tree_sum" {
+  let n = leaf(10)
+  assert_eq(tree_sum(n), 10)
+}
+
+
+test "apply_twice" {
+  let double = fn(x : Int) -> Int { x * 2 }
+  assert_eq(apply_twice(double, 3), 12)
+}
+
+test "describe_num" {
+  assert_eq(describe_num(0), "zero")
+  assert_eq(describe_num(1), "one")
+  assert_eq(describe_num(-5), "negative")
+  assert_eq(describe_num(200), "big")
+  assert_eq(describe_num(50), "other")
+}
+
+test "origin_3d" {
+  let c = origin_3d()
+  assert_eq(c.x, 0)
+  assert_eq(c.y, 0)
+  assert_eq(c.z, 0)
+}
+
+test "offset_coord" {
+  let c = origin_3d()
+  let c2 = offset_coord(c, 1, 2, 3)
+  assert_eq(c2.x, 1)
+  assert_eq(c2.y, 2)
+  assert_eq(c2.z, 3)
+}
+
+test "clamp_positive" {
+  assert_eq(clamp_positive(5), 5)
+  assert_eq(clamp_positive(-3), 0)
+}
+
+test "abs_val" {
+  assert_eq(abs_val(5), 5)
+  assert_eq(abs_val(-3), 3)
+}
+
+test "sum_of_squares" {
+  assert_eq(sum_of_squares(3), 14)
+}
+
+test "opposite direction" {
+  assert_eq(opposite(North), South)
+  assert_eq(opposite(East), West)
+}
+
+test "is_horizontal" {
+  assert_eq(is_horizontal(East), true)
+  assert_eq(is_horizontal(North), false)
+}
+
+test "LIMIT const" {
+  assert_eq(LIMIT, 256)
+}
+

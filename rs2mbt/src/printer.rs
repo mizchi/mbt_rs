@@ -1456,6 +1456,10 @@ fn print_pat(buf: &mut String, pat: &Pat, level: usize) {
             }
             buf.push(']');
         }
+        Pat::Path(p) => {
+            print_path(buf, &p.path);
+        }
+        Pat::Rest(_) => buf.push_str(".."),
         _ => buf.push('_'),
     }
 }

@@ -48,7 +48,7 @@ pub fn lookup_method(name: &str) -> &str {
         "pop" => "pop",
         "is_empty" => "is_empty",
         "unwrap" => "unwrap",
-        "clone" => "copy",
+        "clone" => "", // MoonBit is GC'd, clone is identity
         "borrow" => "", // Borrow::borrow() → identity in GC'd language
         "borrow_mut" => "",
         "as_ref" => "",

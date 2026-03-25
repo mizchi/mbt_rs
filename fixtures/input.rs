@@ -584,3 +584,133 @@ fn is_horizontal(d: &Direction) -> bool {
         _ => false,
     }
 }
+
+// === Result return ===
+
+fn parse_int(s: &str) -> Result<i32, String> {
+    if s.is_empty() {
+        Err("empty string".to_string())
+    } else {
+        Ok(42)
+    }
+}
+
+fn safe_divide(a: f64, b: f64) -> Result<f64, String> {
+    if b == 0.0 {
+        Err("division by zero".to_string())
+    } else {
+        Ok(a / b)
+    }
+}
+
+// === Nested struct ===
+
+struct Address {
+    city: String,
+    zip: String,
+}
+
+struct Person {
+    name: String,
+    age: i32,
+    address: Address,
+}
+
+fn get_city(p: &Person) -> String {
+    p.address.city.clone()
+}
+
+fn is_adult(p: &Person) -> bool {
+    p.age >= 18
+}
+
+// === Multi-arm match with block bodies ===
+
+fn eval_op(op: &str, a: i32, b: i32) -> i32 {
+    match op {
+        "add" => a + b,
+        "sub" => a - b,
+        "mul" => a * b,
+        "div" => {
+            if b != 0 {
+                a / b
+            } else {
+                0
+            }
+        }
+        _ => 0,
+    }
+}
+
+// === Default values ===
+
+fn or_default(x: Option<i32>) -> i32 {
+    match x {
+        Some(v) => v,
+        None => 0,
+    }
+}
+
+// === Vec operations ===
+
+fn contains_val(v: &Vec<i32>, target: i32) -> bool {
+    for x in v {
+        if *x == target {
+            return true;
+        }
+    }
+    false
+}
+
+// === Pattern matching ===
+
+fn color_code(c: &str) -> i32 {
+    match c {
+        "red" => 1,
+        "green" => 2,
+        "blue" => 3,
+        "yellow" => 4,
+        _ => -1,
+    }
+}
+
+// === Arithmetic ===
+
+fn gcd(a: i32, b: i32) -> i32 {
+    let mut a = a;
+    let mut b = b;
+    while b != 0 {
+        let t = b;
+        b = a % b;
+        a = t;
+    }
+    a
+}
+
+fn power(base: i32, exp: i32) -> i32 {
+    let mut result = 1;
+    let mut i = 0;
+    while i < exp {
+        result = result * base;
+        i = i + 1;
+    }
+    result
+}
+
+fn is_even(n: i32) -> bool {
+    n % 2 == 0
+}
+
+fn is_prime(n: i32) -> bool {
+    if n < 2 {
+        return false;
+    }
+    let mut i = 2;
+    while i * i <= n {
+        if n % i == 0 {
+            return false;
+        }
+        i = i + 1;
+    }
+    true
+}

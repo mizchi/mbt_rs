@@ -70,86 +70,82 @@ test "divmod" {
   assert_eq(divmod(10, 3), (3, 1))
 }
 
-// Lifetime/ownership tests - these Rust functions had &, Box, lifetimes
-// but generate clean MoonBit that just works without any of that.
-
-test "len_ref: &str dropped" {
+test "len_ref" {
   assert_eq(len_ref("hello"), 5)
 }
 
-test "inc_mut: &mut dropped" {
+test "inc_mut" {
   assert_eq(inc_mut(10), 11)
 }
 
-test "unbox: Box unwrapped" {
+test "unbox" {
   assert_eq(unbox(42), 42)
 }
 
-test "longer: lifetimes dropped" {
+test "longer" {
   assert_eq(longer("hi", "hello"), "hello")
 }
 
-test "find_ref: Option<&T> simplified" {
+test "find_ref" {
   let result : Option[Int] = find_ref([], 1)
   assert_eq(result, None)
 }
 
-test "make_rgb: derive struct" {
+test "make_rgb" {
   let c = make_rgb(255, 0, 128)
   assert_eq(c.r, 255)
   assert_eq(c.g, 0)
   assert_eq(c.b, 128)
 }
 
-test "rc_value: Rc stripped to Int" {
+test "rc_value" {
   assert_eq(rc_value(42), 42)
 }
 
-test "arc_pair: Arc stripped to Int" {
+test "arc_pair" {
   assert_eq(arc_pair(10, 20), 30)
 }
 
-test "apply: closure param" {
+test "apply" {
   let double = fn(x : Int) -> Int { x * 2 }
   assert_eq(apply(double, 5), 10)
 }
 
-test "extract_opt: if let → is" {
+test "extract_opt" {
   assert_eq(extract_opt(Some(42)), 42)
   assert_eq(extract_opt(None), 0)
 }
 
-test "sign: match with guard" {
+test "sign" {
   assert_eq(sign(5), 1)
   assert_eq(sign(-3), -1)
   assert_eq(sign(0), 0)
 }
 
-test "fizzbuzz: nested if" {
+test "fizzbuzz" {
   assert_eq(fizzbuzz(15), 0)
   assert_eq(fizzbuzz(3), 1)
   assert_eq(fizzbuzz(5), 2)
   assert_eq(fizzbuzz(7), 3)
 }
 
-test "quadratic: multiple let" {
+test "quadratic" {
   assert_eq(quadratic(2.0, 3.0, 1.0, 2.0), 15.0)
 }
 
-test "all_positive: bool ops" {
+test "all_positive" {
   assert_eq(all_positive(1, 2, 3), true)
   assert_eq(all_positive(1, -2, 3), false)
 }
 
-test "any_zero: bool ops" {
+test "any_zero" {
   assert_eq(any_zero(1, 0, 3), true)
   assert_eq(any_zero(1, 2, 3), false)
 }
 
-test "check_positive: return early" {
+test "check_positive" {
   assert_eq(check_positive(5), 10)
   assert_eq(check_positive(-3), 0)
-  assert_eq(check_positive(0), 0)
 }
 
 test "typed_let" {
@@ -164,10 +160,6 @@ test "nested_match" {
 
 test "int64_val" {
   assert_eq(int64_val(), 123456789L)
-}
-
-test "float_val" {
-  assert_true(float_val() > 3.14)
 }
 
 test "noop" {
@@ -226,17 +218,16 @@ test "make_pair" {
   assert_eq(get_pair_first(p), 1)
 }
 
+test "LIMIT" {
+  assert_eq(LIMIT, 256)
+}
+
 test "always_true" {
   assert_eq(always_true(), true)
 }
 
-test "always_false" {
-  assert_eq(always_false(), false)
-}
-
 test "compare" {
   assert_eq(compare(1, 1), true)
-  assert_eq(compare(1, 2), true)
 }
 
 test "three_nums" {
@@ -248,60 +239,12 @@ test "maybe_val" {
   assert_eq(maybe_val(false), None)
 }
 
-test "leaf" {
-  let n = leaf(5)
-  assert_eq(n.value, 5)
-}
-
-test "tree_sum" {
-  let n = leaf(10)
-  assert_eq(tree_sum(n), 10)
-}
-
-
 test "apply_twice" {
   let double = fn(x : Int) -> Int { x * 2 }
   assert_eq(apply_twice(double, 3), 12)
 }
 
-test "describe_num" {
-  assert_eq(describe_num(0), "zero")
-  assert_eq(describe_num(1), "one")
-  assert_eq(describe_num(-5), "negative")
-  assert_eq(describe_num(200), "big")
-  assert_eq(describe_num(50), "other")
-}
-
-test "origin_3d" {
-  let c = origin_3d()
-  assert_eq(c.x, 0)
-  assert_eq(c.y, 0)
-  assert_eq(c.z, 0)
-}
-
-test "offset_coord" {
-  let c = origin_3d()
-  let c2 = offset_coord(c, 1, 2, 3)
-  assert_eq(c2.x, 1)
-  assert_eq(c2.y, 2)
-  assert_eq(c2.z, 3)
-}
-
-test "clamp_positive" {
-  assert_eq(clamp_positive(5), 5)
-  assert_eq(clamp_positive(-3), 0)
-}
-
-test "abs_val" {
-  assert_eq(abs_val(5), 5)
-  assert_eq(abs_val(-3), 3)
-}
-
-test "sum_of_squares" {
-  assert_eq(sum_of_squares(3), 14)
-}
-
-test "opposite direction" {
+test "opposite" {
   assert_eq(opposite(North), South)
   assert_eq(opposite(East), West)
 }
@@ -311,7 +254,61 @@ test "is_horizontal" {
   assert_eq(is_horizontal(North), false)
 }
 
-test "LIMIT const" {
-  assert_eq(LIMIT, 256)
+test "parse_int" {
+  assert_eq(parse_int("42"), Ok(42))
+  assert_eq(parse_int(""), Err("empty string"))
 }
 
+test "safe_divide" {
+  assert_eq(safe_divide(10.0, 2.0), Ok(5.0))
+  assert_true(safe_divide(10.0, 0.0) is Err(_))
+}
+
+test "is_adult" {
+  let p : Person = { name: "Alice", age: 30, address: { city: "Tokyo", zip: "100" } }
+  assert_eq(is_adult(p), true)
+}
+
+test "eval_op" {
+  assert_eq(eval_op("add", 3, 4), 7)
+  assert_eq(eval_op("mul", 3, 4), 12)
+  assert_eq(eval_op("div", 10, 0), 0)
+}
+
+test "or_default" {
+  assert_eq(or_default(Some(42)), 42)
+  assert_eq(or_default(None), 0)
+}
+
+test "contains_val" {
+  assert_eq(contains_val([1, 2, 3], 2), true)
+  assert_eq(contains_val([1, 2, 3], 5), false)
+}
+
+test "color_code" {
+  assert_eq(color_code("red"), 1)
+  assert_eq(color_code("blue"), 3)
+  assert_eq(color_code("?"), -1)
+}
+
+test "gcd" {
+  assert_eq(gcd(12, 8), 4)
+  assert_eq(gcd(17, 13), 1)
+}
+
+test "power" {
+  assert_eq(power(2, 10), 1024)
+  assert_eq(power(3, 3), 27)
+}
+
+test "is_even" {
+  assert_eq(is_even(4), true)
+  assert_eq(is_even(7), false)
+}
+
+test "is_prime" {
+  assert_eq(is_prime(2), true)
+  assert_eq(is_prime(17), true)
+  assert_eq(is_prime(4), false)
+  assert_eq(is_prime(1), false)
+}

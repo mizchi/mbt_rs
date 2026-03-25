@@ -80,6 +80,16 @@ pub fn is_wrapper_type(name: &str) -> bool {
     matches!(name, "Rc" | "Arc" | "RefCell" | "Mutex")
 }
 
+/// Check if a function call is a wrapper constructor (Box::new, Rc::new etc.)
+/// that should be unwrapped to just its argument.
+pub fn is_wrapper_constructor(path: &str) -> bool {
+    matches!(
+        path,
+        "Box::new" | "Rc::new" | "Arc::new" | "Cell::new" | "RefCell::new"
+            | "Mutex::new" | "Pin::new"
+    )
+}
+
 /// Map Rust derive trait to MoonBit derive trait.
 pub fn lookup_derive(name: &str) -> &str {
     match name {

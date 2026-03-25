@@ -745,9 +745,9 @@ fn print_derive_attrs(buf: &mut String, attrs: &[Attribute]) {
                 Ok(())
             });
             if !derives.is_empty() {
-                buf.push_str(" derive(");
+                buf.push_str("derive(");
                 buf.push_str(&derives.join(", "));
-                buf.push(')');
+                buf.push_str(")\n");
             }
         }
     }
@@ -859,17 +859,44 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
             print_expr(buf, &b.right, level);
         }
         Expr::Call(c) => {
-            print_expr(buf, &c.func, level);
-            buf.push('(');
-            let mut first = true;
-            for arg in &c.args {
-                if !first {
-                    buf.push_str(", ");
+            // Check if this is a wrapper constructor: Box::new(x) → x
+            let call_path = {
+                let mut p = String::new();
+                print_expr(&mut p, &c.func, level);
+                p
+            };
+            if mapping::is_wrapper_constructor(&call_path) && c.args.len() == 1 {
+                // Unwrap: Box::new(x) → x
+                print_expr(buf, &c.args[0], level);
+            } else if call_path == "::new" || call_path.ends_with("::::new") {
+                // Broken path from empty type mapping: just print args
+                if c.args.len() == 1 {
+                    print_expr(buf, &c.args[0], level);
+                } else {
+                    buf.push('(');
+                    let mut first = true;
+                    for arg in &c.args {
+                        if !first {
+                            buf.push_str(", ");
+                        }
+                        first = false;
+                        print_expr(buf, arg, level);
+                    }
+                    buf.push(')');
                 }
-                first = false;
-                print_expr(buf, arg, level);
+            } else {
+                buf.push_str(&call_path);
+                buf.push('(');
+                let mut first = true;
+                for arg in &c.args {
+                    if !first {
+                        buf.push_str(", ");
+                    }
+                    first = false;
+                    print_expr(buf, arg, level);
+                }
+                buf.push(')');
             }
-            buf.push(')');
         }
         Expr::MethodCall(m) => {
             let method_str = m.method.to_string();

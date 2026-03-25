@@ -125,7 +125,7 @@ fn test_const() {
 fn test_derive() {
     assert_rs2mbt(
         "#[derive(Debug, PartialEq, Eq)]\nstruct Point { x: i32, y: i32 }",
-        "derive(Show, Eq)struct Point {\n  x : Int\n  y : Int\n}",
+        "derive(Show, Eq)\nstruct Point {\n  x : Int\n  y : Int\n}",
     );
 }
 
@@ -815,7 +815,7 @@ fn test_for_tuple_destructure() {
 fn test_derive_hash() {
     assert_rs2mbt(
         "#[derive(Hash)]\nstruct Key { id: i32 }",
-        "derive(Hash)struct Key {\n  id : Int\n}",
+        "derive(Hash)\nstruct Key {\n  id : Int\n}",
     );
 }
 
@@ -959,7 +959,7 @@ fn test_multiline_fn() {
 fn test_enum_with_derive_multiple() {
     assert_rs2mbt(
         "#[derive(Debug, Clone, PartialEq, Eq, Hash)]\nenum Token { Ident(String), Number(i32), Plus, Minus }",
-        "derive(Show, Eq, Hash)enum Token {\n  Ident(String)\n  Number(Int)\n  Plus\n  Minus\n}",
+        "derive(Show, Eq, Hash)\nenum Token {\n  Ident(String)\n  Number(Int)\n  Plus\n  Minus\n}",
     );
 }
 

@@ -465,6 +465,15 @@ fn print_type(buf: &mut String, ty: &Type) {
             print_type(buf, &p.elem);
         }
         Type::Slice(s) => {
+            // &[u8] → Bytes (MoonBit's native byte sequence type)
+            if let Type::Path(tp) = s.elem.as_ref() {
+                if let Some(seg) = tp.path.segments.last() {
+                    if seg.ident == "u8" {
+                        buf.push_str("Bytes");
+                        return;
+                    }
+                }
+            }
             buf.push_str("Array[");
             print_type(buf, &s.elem);
             buf.push(']');
@@ -1428,6 +1437,8 @@ fn print_lit(buf: &mut String, lit: &Lit) {
             // Strip Rust suffixes
             let s = s.trim_end_matches("i32").trim_end_matches("i64")
                 .trim_end_matches("u32").trim_end_matches("u64")
+                .trim_end_matches("u8").trim_end_matches("i8")
+                .trim_end_matches("u16").trim_end_matches("i16")
                 .trim_end_matches("f32").trim_end_matches("f64")
                 .trim_end_matches("usize").trim_end_matches("isize");
             buf.push_str(s);

@@ -738,6 +738,25 @@ fn str_trim(s: &str) -> String {
     s.trim().to_string()
 }
 
+// Bytes operations
+fn string_to_bytes(s: &str) -> Vec<u8> {
+    s.as_bytes().to_vec()
+}
+
+fn bytes_length(data: &[u8]) -> usize {
+    data.len()
+}
+
+fn count_byte(data: &[u8], target: u8) -> i32 {
+    let mut count = 0;
+    for b in data {
+        if *b == target {
+            count = count + 1;
+        }
+    }
+    count
+}
+
 fn is_prime(n: i32) -> bool {
     if n < 2 {
         return false;

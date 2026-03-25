@@ -73,6 +73,8 @@ mod behavioral_tests {
     #[test] fn test_gcd() { assert_eq!(gcd(12, 8), 4); assert_eq!(gcd(17, 13), 1); }
     #[test] fn test_power() { assert_eq!(power(2, 10), 1024); assert_eq!(power(3, 3), 27); }
     #[test] fn test_is_even() { assert!(is_even(4)); assert!(!is_even(7)); }
+    #[test] fn test_bytes_length() { assert_eq!(bytes_length(b"hello"), 5); }
+    #[test] fn test_count_byte() { assert_eq!(count_byte(b"hello", b'l'), 2); }
     #[test] fn test_is_prime() { assert!(is_prime(2)); assert!(is_prime(17)); assert!(!is_prime(4)); assert!(!is_prime(1)); }
     #[test] fn test_make_empty_vec() { assert_eq!(make_empty_vec(), Vec::<i32>::new()); }
     #[test] fn test_option_unwrap_or() { assert_eq!(option_unwrap_or(Some(5)), 5); assert_eq!(option_unwrap_or(None), 0); }

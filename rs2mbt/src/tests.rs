@@ -963,6 +963,40 @@ fn test_enum_with_derive_multiple() {
     );
 }
 
+// === Bytes ===
+
+#[test]
+fn test_bytes_as_bytes() {
+    assert_rs2mbt(
+        "fn to_bytes(s: &str) -> Vec<u8> { s.as_bytes().to_vec() }",
+        "fn to_bytes(s : String) -> Array[Byte] {\n  s.to_bytes().to_array()\n}",
+    );
+}
+
+#[test]
+fn test_bytes_from_utf8() {
+    assert_rs2mbt(
+        "fn from_bytes(b: &[u8]) -> String { String::from_utf8_lossy(b).to_string() }",
+        "fn from_bytes(b : Bytes) -> String {\n  String::from_utf8_lossy(b).to_string()\n}",
+    );
+}
+
+#[test]
+fn test_byte_literal() {
+    assert_rs2mbt(
+        "fn zero_byte() -> u8 { 0u8 }",
+        "fn zero_byte() -> Byte {\n  0\n}",
+    );
+}
+
+#[test]
+fn test_byte_slice_param() {
+    assert_rs2mbt(
+        "fn count_zeros(data: &[u8]) -> usize { let mut c = 0; for b in data { if *b == 0 { c = c + 1; } } c }",
+        "fn count_zeros(data : Bytes) -> Int {\n  let mut c = 0\n  for b in data {\n    if b == 0 {\n      c = c + 1\n    }\n  }\n  c\n}",
+    );
+}
+
 // === Async ===
 
 #[test]

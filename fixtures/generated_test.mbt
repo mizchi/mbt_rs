@@ -337,6 +337,14 @@ test "str_trim" {
   assert_eq(str_trim("  hello  "), "hello")
 }
 
+test "bytes_length" {
+  assert_eq(bytes_length(b"hello"), 5)
+}
+
+test "count_byte" {
+  assert_eq(count_byte(b"hello", b'l'), 2)
+}
+
 test "is_prime" {
   assert_eq(is_prime(2), true)
   assert_eq(is_prime(17), true)

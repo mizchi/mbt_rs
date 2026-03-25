@@ -69,6 +69,13 @@ pub fn lookup_method(name: &str) -> &str {
         "count" => "length",
         "size" => "length",
 
+        // === Bytes / binary ===
+        "as_bytes" => "to_bytes",          // String → Bytes
+        "into_bytes" => "to_bytes",        // String → Bytes
+        "from_utf8" => "to_string",        // Bytes → String (static method, approximate)
+        "from_utf8_lossy" => "to_string",  // Bytes → String
+        "to_vec" => "to_array",            // &[u8] → Array[Byte]
+
         // === String methods ===
         "to_string" => "to_string",
         "as_str" => "",               // identity: &String → &str
@@ -232,6 +239,7 @@ pub fn lookup_constructor(path: &str) -> Option<&str> {
         "String::new" => Some("\"\""),
         "Map::new" | "HashMap::new" => Some("{}"),
         "Option::None" | "None" => Some("None"),
+        "Bytes::new" => Some("Bytes::new(0)"),
         _ => None,
     }
 }

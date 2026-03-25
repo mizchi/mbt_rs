@@ -81,6 +81,28 @@ behavioral-test:
     moon test --target js
     echo "=== Both pass: behavioral equivalence confirmed ==="
 
+# Conversion quality report for a Rust file
+quality-report file:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    cargo build -q --manifest-path "$root/rs2mbt/Cargo.toml"
+    "$root/rs2mbt/target/debug/rs2mbt" --report "{{file}}"
+
+# Quality report for all real projects
+quality-report-all:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    cargo build -q --manifest-path "$root/rs2mbt/Cargo.toml"
+    for f in "$root"/fixtures/real_projects/*.rs; do
+        echo ""
+        echo "================================================================"
+        echo "File: $(basename $f)"
+        echo "================================================================"
+        "$root/rs2mbt/target/debug/rs2mbt" --report "$f" 2>&1 | head -25
+    done
+
 # Generate MoonBit from real Rust projects (for inspection, not CI)
 generate-real-projects:
     #!/usr/bin/env bash

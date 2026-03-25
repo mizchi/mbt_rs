@@ -306,6 +306,37 @@ test "is_even" {
   assert_eq(is_even(7), false)
 }
 
+test "make_empty_vec" {
+  assert_eq(make_empty_vec(), [])
+}
+
+test "option_unwrap_or" {
+  assert_eq(option_unwrap_or(Some(5)), 5)
+  assert_eq(option_unwrap_or(None), 0)
+}
+
+test "option_is_some" {
+  assert_eq(option_is_some(Some(1)), true)
+  assert_eq(option_is_some(None), false)
+}
+
+test "str_to_lower" {
+  assert_eq(str_to_lower("HELLO"), "hello")
+}
+
+test "str_to_upper" {
+  assert_eq(str_to_upper("hello"), "HELLO")
+}
+
+test "str_starts_with" {
+  assert_eq(str_starts_with("hello world", "hello"), true)
+  assert_eq(str_starts_with("hello world", "world"), false)
+}
+
+test "str_trim" {
+  assert_eq(str_trim("  hello  "), "hello")
+}
+
 test "is_prime" {
   assert_eq(is_prime(2), true)
   assert_eq(is_prime(17), true)

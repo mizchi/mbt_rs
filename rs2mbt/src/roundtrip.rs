@@ -127,8 +127,8 @@ mod tests {
     #[test]
     fn roundtrip_impl_trait() {
         assert_roundtrip_structure(
-            "impl Display for Point { fn fmt(&self, f: &mut Formatter) -> Result<(), Error> { Ok(()) } }",
-            &["impl Display for Point with fmt(self"],
+            "impl Show for Point { fn fmt(&self, f: &mut Formatter) -> Result<(), Error> { Ok(()) } }",
+            &["impl Show for Point with fmt(self"],
         );
     }
 

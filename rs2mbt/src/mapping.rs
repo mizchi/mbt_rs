@@ -1,60 +1,184 @@
 /// Map Rust type name to MoonBit type name.
 pub fn lookup_type(name: &str) -> &str {
     match name {
-        "i32" => "Int",
-        "u32" => "UInt",
+        // Primitives
+        "i8" | "i16" | "i32" | "isize" => "Int",
+        "u8" => "Byte",
+        "u16" | "u32" => "UInt",
         "i64" => "Int64",
         "u64" => "UInt64",
         "f32" => "Float",
         "f64" => "Double",
         "bool" => "Bool",
-        "String" => "String",
-        "u8" => "Byte",
         "char" => "Char",
+        "usize" => "Int",
+
+        // String types
+        "String" => "String",
+        "str" => "String",
+        "OsStr" | "OsString" => "String",
+        "CStr" | "CString" => "String",
+
+        // Collections
         "Vec" => "Array",
+        "VecDeque" => "Array",   // approximate
+        "LinkedList" => "Array", // approximate
         "HashMap" => "Map",
+        "BTreeMap" => "Map",
+        "HashSet" => "Set",      // MoonBit @hashset
+        "BTreeSet" => "Set",
+
+        // Standard types
         "Option" => "Option",
         "Result" => "Result",
+
+        // Trait names (used in bounds)
         "PartialOrd" => "Compare",
         "Ord" => "Compare",
         "PartialEq" => "Eq",
-        "Box" => "",        // unwrap silently: Box<T> → T (allocation detail)
-        "Rc" => "",      // unwrap: Rc<T> → T (tracked for documentation)
-        "Arc" => "",     // unwrap: Arc<T> → T (tracked for documentation)
-        "Cow" => "",        // unwrap silently: Cow<T> → T (optimization detail)
-        "Cell" => "",       // unwrap silently: Cell<T> → T
-        "RefCell" => "", // unwrap: RefCell<T> → T (tracked for documentation)
-        "Mutex" => "",   // unwrap: Mutex<T> → T (tracked for documentation)
-        "Pin" => "",        // unwrap silently: Pin<T> → T
-        "usize" => "Int",
-        "isize" => "Int",
-        "str" => "String",
+        "Display" => "Show",
+        "From" => "From",
+        "Into" => "Into",
+        "Iterator" => "Iter",
+        "IntoIterator" => "Iter",
+
+        // Smart pointers → unwrap
+        "Box" => "",
+        "Rc" => "",
+        "Arc" => "",
+        "Cow" => "",
+        "Cell" => "",
+        "RefCell" => "",
+        "Mutex" => "",
+        "RwLock" => "",
+        "Pin" => "",
+        "MutexGuard" => "",
+        "Ref" => "",     // std::cell::Ref
+        "RefMut" => "",  // std::cell::RefMut
+
         _ => name,
     }
 }
 
 /// Map Rust method name to MoonBit method name.
+/// Returns "" for identity operations (to be stripped).
 pub fn lookup_method(name: &str) -> &str {
     match name {
+        // === Length / size ===
         "len" => "length",
+        "count" => "length",
+        "size" => "length",
+
+        // === String methods ===
         "to_string" => "to_string",
+        "as_str" => "",               // identity: &String → &str
+        "to_owned" => "",             // identity in GC
         "contains" => "contains",
         "starts_with" => "starts_with",
         "ends_with" => "ends_with",
         "trim" => "trim",
+        "trim_start" => "trim_start",
+        "trim_end" => "trim_end",
         "to_lowercase" => "to_lower",
         "to_uppercase" => "to_upper",
+        "replace" => "replace",
+        "split" => "split",
+        "chars" => "iter",
+        "bytes" => "iter",
+        "lines" => "split",          // approximate
+        "repeat" => "to_string", // approximate
+        "is_empty" => "is_empty",
+        "push_str" => "push",        // MoonBit: buf.push(s) for StringBuilder
+
+        // === Vec / Array methods ===
         "push" => "push",
         "pop" => "pop",
-        "is_empty" => "is_empty",
+        "get" => "get",
+        "first" => "first",
+        "last" => "last",
+        "insert" => "insert",
+        "remove" => "remove",
+        "swap" => "swap",
+        "reverse" => "rev",
+        "sort" => "sort",
+        "sort_by" => "sort_by",
+        "clear" => "clear",
+        "truncate" => "truncate",
+        "extend" => "append",         // approximate
+        "drain" => "drain",
+        "retain" => "retain",
+        "iter" => "iter",
+        "iter_mut" => "iter",
+        "into_iter" => "iter",
+        "map" => "map",
+        "filter" => "filter",
+        "flat_map" => "flat_map",
+        "fold" => "fold",
+        "reduce" => "reduce",
+        "zip" => "zip",
+        "enumerate" => "mapi",        // MoonBit: arr.mapi(fn(i, x) { ... })
+        "for_each" => "each",
+        "any" => "any",
+        "all" => "all",
+        "find" => "find",
+        "position" => "find_index",   // MoonBit: arr.find_index(...)
+        "skip" => "drop",             // MoonBit Iter: iter.drop(n)
+        "take" => "take",
+        "flatten" => "flatten",
+        "collect" => "to_array",      // approximate
+        "sum" => "fold(init=0, fn(a, b) { a + b })", // approximate
+        "min" => "minimum",
+        "max" => "maximum",
+        "cloned" => "",               // identity in GC
+        "copied" => "",               // identity in GC
+        "as_slice" => "",             // identity
+        "as_mut_slice" => "",         // identity
+
+        // === Option methods ===
         "unwrap" => "unwrap",
-        "clone" => "", // MoonBit is GC'd, clone is identity
-        "borrow" => "", // Borrow::borrow() → identity in GC'd language
+        "unwrap_or" => "or",          // MoonBit: opt.or(default)
+        "unwrap_or_else" => "or_else",
+        "unwrap_or_default" => "or_default",
+        "is_some" => "is_some",       // MoonBit: opt is Some(_) or method
+        "is_none" => "is_none",
+        "and_then" => "map",
+        "or" => "or",
+        "or_else" => "or_else",
+        "expect" => "unwrap",         // MoonBit has no expect, use unwrap
+        "ok_or" => "ok_or",
+        "ok_or_else" => "ok_or_else",
+        "transpose" => "flatten",
+
+        // === Result methods ===
+        "is_ok" => "is_ok",
+        "is_err" => "is_err",
+        "ok" => "ok",
+        "err" => "err",
+        "map_err" => "map_err",
+
+        // === Numeric methods ===
+        "abs" => "abs",
+        "pow" => "pow",
+        "sqrt" => "sqrt",
+        "floor" => "floor",
+        "ceil" => "ceil",
+        "round" => "round",
+        "signum" => "signum",
+        "to_be_bytes" | "to_le_bytes" | "to_ne_bytes" => "to_bytes",
+
+        // === Ownership/lifetime identity ops ===
+        "clone" => "",
+        "borrow" => "",
         "borrow_mut" => "",
         "as_ref" => "",
         "as_mut" => "",
         "deref" => "",
         "deref_mut" => "",
+        "into_inner" => "",            // unwrap wrapper
+        "lock" => "",                  // Mutex::lock → identity in GC
+        "read" => "",                  // RwLock::read
+        "write" => "",                 // RwLock::write
+
         _ => name,
     }
 }
@@ -68,29 +192,41 @@ pub fn lookup_macro(name: &str) -> Option<&str> {
         "println" => Some("println"),
         "print" => Some("print"),
         "eprintln" => Some("eprintln"),
-        "panic" => Some("abort"),
+        "eprint" => Some("eprint"),
+        "panic" | "unreachable" => Some("abort"),
+        "dbg" => Some("debug"),
         "matches" => None, // handled specially as `is` expression
-        "todo" => None, // MoonBit uses `_` or `...`
-        "vec" => None,  // handled specially
-        "format" => None, // handled as string interpolation
+        "todo" => None,    // MoonBit uses `...`
+        "vec" => None,     // handled specially as array literal
+        "format" => None,  // handled as string interpolation
+        "write" | "writeln" => None, // handled specially
         _ => None,
     }
 }
 
-/// Check if a type name is a wrapper that should generate a type alias.
-/// These are Rust ownership/sync types that become transparent in MoonBit.
+/// Check if a type name is a wrapper that should be documented when stripped.
 pub fn is_wrapper_type(name: &str) -> bool {
-    matches!(name, "Rc" | "Arc" | "RefCell" | "Mutex")
+    matches!(name, "Rc" | "Arc" | "RefCell" | "Mutex" | "RwLock")
 }
 
-/// Check if a function call is a wrapper constructor (Box::new, Rc::new etc.)
-/// that should be unwrapped to just its argument.
+/// Check if a function call is a wrapper constructor that should be unwrapped.
 pub fn is_wrapper_constructor(path: &str) -> bool {
     matches!(
         path,
         "Box::new" | "Rc::new" | "Arc::new" | "Cell::new" | "RefCell::new"
-            | "Mutex::new" | "Pin::new"
+            | "Mutex::new" | "RwLock::new" | "Pin::new"
     )
+}
+
+/// Check if a call path is a type constructor that should be simplified.
+/// e.g., Vec::new() → [], String::new() → "", HashMap::new() → {}
+pub fn lookup_constructor(path: &str) -> Option<&str> {
+    match path {
+        "Array::new" | "Vec::new" => Some("[]"),
+        "String::new" => Some("\"\""),
+        "Map::new" | "HashMap::new" => Some("{}"),
+        _ => None,
+    }
 }
 
 /// Map Rust derive trait to MoonBit derive trait.
@@ -103,8 +239,8 @@ pub fn lookup_derive(name: &str) -> &str {
         "Ord" => "Compare",
         "Hash" => "Hash",
         "Default" => "Default",
-        "Clone" => "", // MoonBit has no Clone derive
-        "Copy" => "",  // MoonBit has no Copy derive
+        "Clone" | "Copy" => "", // GC'd, not needed
+        "Serialize" | "Deserialize" => "", // serde, skip
         _ => name,
     }
 }

@@ -704,6 +704,40 @@ fn is_even(n: i32) -> bool {
     n % 2 == 0
 }
 
+// === Standard library method mappings ===
+
+fn make_empty_vec() -> Vec<i32> {
+    Vec::new()
+}
+
+fn make_empty_string() -> String {
+    String::new()
+}
+
+fn option_unwrap_or(x: Option<i32>) -> i32 {
+    x.unwrap_or(0)
+}
+
+fn option_is_some(x: Option<i32>) -> bool {
+    x.is_some()
+}
+
+fn str_to_lower(s: &str) -> String {
+    s.to_lowercase()
+}
+
+fn str_to_upper(s: &str) -> String {
+    s.to_uppercase()
+}
+
+fn str_starts_with(s: &str, prefix: &str) -> bool {
+    s.starts_with(prefix)
+}
+
+fn str_trim(s: &str) -> String {
+    s.trim().to_string()
+}
+
 fn is_prime(n: i32) -> bool {
     if n < 2 {
         return false;

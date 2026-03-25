@@ -19,7 +19,7 @@ fn test_simple_function() {
 fn test_pub_function() {
     assert_rs2mbt(
         "pub fn hello() -> String { String::new() }",
-        "pub fn hello() -> String {\n  String::new()\n}",
+        "pub fn hello() -> String {\n  \"\"\n}",
     );
 }
 
@@ -437,7 +437,7 @@ fn test_trait() {
 fn test_trait_with_super() {
     assert_rs2mbt(
         "trait Drawable: Display { fn draw(&self); }",
-        "trait Drawable : Display {\n  draw(self) -> Unit\n}",
+        "trait Drawable : Show {\n  draw(self) -> Unit\n}",
     );
 }
 
@@ -613,7 +613,7 @@ fn test_if_let_is_pattern() {
 fn test_self_resolved_in_impl() {
     assert_rs2mbt(
         "impl Stack { fn new() -> Self { Stack { elements: Vec::new() } } }",
-        "fn Stack::new() -> Stack {\n  { elements: Array::new() }\n}",
+        "fn Stack::new() -> Stack {\n  { elements: [] }\n}",
     );
 }
 
@@ -766,7 +766,7 @@ fn test_multiple_params_no_return() {
 fn test_generic_with_bounds() {
     assert_rs2mbt(
         "fn print_it<T: Display>(x: T) {}",
-        "fn[T : Display] print_it(x : T) -> Unit {\n\n}",
+        "fn[T : Show] print_it(x : T) -> Unit {\n\n}",
     );
 }
 
@@ -889,7 +889,7 @@ fn test_closure_with_return_type() {
 fn test_nested_method_calls() {
     assert_rs2mbt(
         "fn count(v: Vec<i32>) -> usize { v.iter().filter(|x| *x > 0).count() }",
-        "fn count(v : Array[Int]) -> Int {\n  v.iter().filter(fn(x) -> Unit { x > 0 }).count()\n}",
+        "fn count(v : Array[Int]) -> Int {\n  v.iter().filter(fn(x) -> Unit { x > 0 }).length()\n}",
     );
 }
 
@@ -897,7 +897,7 @@ fn test_nested_method_calls() {
 fn test_multiple_trait_bounds() {
     assert_rs2mbt(
         "fn show<T: Display + Debug>(x: T) {}",
-        "fn[T : Display + Debug] show(x : T) -> Unit {\n\n}",
+        "fn[T : Show + Debug] show(x : T) -> Unit {\n\n}",
     );
 }
 
@@ -929,7 +929,7 @@ fn test_method_clone() {
 fn test_impl_trait_with_body() {
     assert_rs2mbt(
         "impl Display for Point { fn fmt(&self, f: &mut Formatter) -> Result<(), Error> { Ok(()) } }",
-        "impl Display for Point with fmt(self, f : Formatter) -> Result[Unit, Error] {\n  Ok(())\n}",
+        "impl Show for Point with fmt(self, f : Formatter) -> Result[Unit, Error] {\n  Ok(())\n}",
     );
 }
 

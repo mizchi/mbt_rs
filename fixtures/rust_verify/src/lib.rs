@@ -74,4 +74,11 @@ mod behavioral_tests {
     #[test] fn test_power() { assert_eq!(power(2, 10), 1024); assert_eq!(power(3, 3), 27); }
     #[test] fn test_is_even() { assert!(is_even(4)); assert!(!is_even(7)); }
     #[test] fn test_is_prime() { assert!(is_prime(2)); assert!(is_prime(17)); assert!(!is_prime(4)); assert!(!is_prime(1)); }
+    #[test] fn test_make_empty_vec() { assert_eq!(make_empty_vec(), Vec::<i32>::new()); }
+    #[test] fn test_option_unwrap_or() { assert_eq!(option_unwrap_or(Some(5)), 5); assert_eq!(option_unwrap_or(None), 0); }
+    #[test] fn test_option_is_some() { assert!(option_is_some(Some(1))); assert!(!option_is_some(None)); }
+    #[test] fn test_str_to_lower() { assert_eq!(str_to_lower("HELLO"), "hello"); }
+    #[test] fn test_str_to_upper() { assert_eq!(str_to_upper("hello"), "HELLO"); }
+    #[test] fn test_str_starts_with() { assert!(str_starts_with("hello world", "hello")); assert!(!str_starts_with("hello world", "world")); }
+    #[test] fn test_str_trim() { assert_eq!(str_trim("  hello  "), "hello"); }
 }

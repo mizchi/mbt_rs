@@ -861,7 +861,10 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
                 print_expr(&mut p, &c.func, level);
                 p
             };
-            if mapping::is_wrapper_constructor(&call_path) && c.args.len() == 1 {
+            if let Some(literal) = mapping::lookup_constructor(&call_path) {
+                // Type constructor → literal: Vec::new() → [], String::new() → ""
+                buf.push_str(literal);
+            } else if mapping::is_wrapper_constructor(&call_path) && c.args.len() == 1 {
                 // Unwrap: Box::new(x) → x
                 print_expr(buf, &c.args[0], level);
             } else if call_path == "::new" || call_path.ends_with("::::new") {

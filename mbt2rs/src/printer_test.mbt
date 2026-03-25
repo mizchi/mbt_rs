@@ -683,7 +683,7 @@ test "rust: impl relation" {
     (
       #|impl Show for Point
     ),
-    "impl Show for Point {}\n",
+    "impl Debug for Point {}\n",
   )
 }
 

@@ -50,8 +50,8 @@ jobs:
       - name: rs2mbt tests
         run: cargo test --manifest-path rs2mbt/Cargo.toml
 
-  cross-validation:
-    name: Cross-validation (rs2mbt → moon check)
+  behavioral:
+    name: Behavioral equivalence (Rust = MoonBit)
     needs: [mbt, rust]
     runs-on: ubuntu-latest
     steps:
@@ -67,5 +67,5 @@ jobs:
         run: moon update
       - name: Rust toolchain
         run: rustc --version && cargo --version
-      - name: Cross-validate (Rust → MoonBit → moon check + moon test)
-        run: just moon-check-rs2mbt
+      - name: Behavioral equivalence test
+        run: just behavioral-test

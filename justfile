@@ -59,8 +59,30 @@ moon-check-rs2mbt:
     moon check
     moon test --target js
 
-# Run all tests (MoonBit + Rust + cross-validation)
-test-all: test cargo-test moon-check-rs2mbt
+# Behavioral equivalence: run same assertions in Rust and MoonBit
+behavioral-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    echo "=== Rust behavioral tests ==="
+    cargo test --manifest-path "$root/fixtures/rust_verify/Cargo.toml" --lib -q
+    echo "=== MoonBit behavioral tests (via rs2mbt) ==="
+    cargo build -q --manifest-path "$root/rs2mbt/Cargo.toml"
+    tmpdir=$(mktemp -d)
+    trap 'rm -rf "$tmpdir"' EXIT
+    echo '{"name":"test_rs2mbt","version":"0.1.0"}' > "$tmpdir/moon.mod.json"
+    mkdir -p "$tmpdir/src"
+    touch "$tmpdir/src/moon.pkg"
+    "$root/rs2mbt/target/debug/rs2mbt" "$root/fixtures/input.rs" > "$tmpdir/src/generated.mbt"
+    echo "" >> "$tmpdir/src/generated.mbt"
+    cat "$root/fixtures/generated_test.mbt" >> "$tmpdir/src/generated.mbt"
+    cd "$tmpdir"
+    moon check
+    moon test --target js
+    echo "=== Both pass: behavioral equivalence confirmed ==="
+
+# Run all tests (MoonBit + Rust + behavioral equivalence)
+test-all: test cargo-test behavioral-test
 
 # CI checks
-ci: fmt-check info-check check test cargo-test moon-check-rs2mbt
+ci: fmt-check info-check check test cargo-test behavioral-test

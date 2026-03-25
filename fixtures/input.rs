@@ -1,3 +1,6 @@
+use std::rc::Rc;
+use std::sync::Arc;
+
 fn add(x: i32, y: i32) -> i32 {
     x + y
 }

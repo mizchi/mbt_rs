@@ -1090,12 +1090,26 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
             }
         }
         Expr::ForLoop(f) => {
-            buf.push_str("for ");
-            print_pat(buf, &f.pat, level);
-            buf.push_str(" in ");
-            print_expr(buf, &f.expr, level);
-            buf.push_str(" {\n");
-            print_block_body(buf, &f.body, level + 1);
+            // MoonBit for-each doesn't support tuple destructure directly
+            // for (a, b) in v → for _item in v { let (a, b) = _item; ... }
+            let is_complex_pat = matches!(&*f.pat, Pat::Tuple(_) | Pat::Struct(_) | Pat::TupleStruct(_));
+            if is_complex_pat {
+                buf.push_str("for _item in ");
+                print_expr(buf, &f.expr, level);
+                buf.push_str(" {\n");
+                indent(buf, level + 1);
+                buf.push_str("let ");
+                print_pat(buf, &f.pat, level);
+                buf.push_str(" = _item\n");
+                print_block_body(buf, &f.body, level + 1);
+            } else {
+                buf.push_str("for ");
+                print_pat(buf, &f.pat, level);
+                buf.push_str(" in ");
+                print_expr(buf, &f.expr, level);
+                buf.push_str(" {\n");
+                print_block_body(buf, &f.body, level + 1);
+            }
             buf.push('\n');
             indent(buf, level);
             buf.push('}');

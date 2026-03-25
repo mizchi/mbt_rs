@@ -807,7 +807,7 @@ fn test_field_assign() {
 fn test_for_tuple_destructure() {
     assert_rs2mbt(
         "fn sum_pairs(pairs: Vec<(i32, i32)>) -> i32 { let mut t = 0; for (a, b) in pairs { t = t + a + b; } t }",
-        "fn sum_pairs(pairs : Array[(Int, Int)]) -> Int {\n  let mut t = 0\n  for (a, b) in pairs {\n    t = t + a + b\n  }\n  t\n}",
+        "fn sum_pairs(pairs : Array[(Int, Int)]) -> Int {\n  let mut t = 0\n  for _item in pairs {\n    let (a, b) = _item\n    t = t + a + b\n  }\n  t\n}",
     );
 }
 

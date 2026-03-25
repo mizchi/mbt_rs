@@ -15,6 +15,9 @@ pub fn lookup_type(name: &str) -> &str {
         "HashMap" => "Map",
         "Option" => "Option",
         "Result" => "Result",
+        "PartialOrd" => "Compare",
+        "Ord" => "Compare",
+        "PartialEq" => "Eq",
         "Box" => "",        // unwrap silently: Box<T> → T (allocation detail)
         "Rc" => "",      // unwrap: Rc<T> → T (tracked for documentation)
         "Arc" => "",     // unwrap: Arc<T> → T (tracked for documentation)

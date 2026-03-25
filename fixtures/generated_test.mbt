@@ -108,3 +108,40 @@ test "rc_value: Rc stripped to Int" {
 test "arc_pair: Arc stripped to Int" {
   assert_eq(arc_pair(10, 20), 30)
 }
+
+test "apply: closure param" {
+  assert_eq(apply(fn(x) { x * 2 }, 5), 10)
+}
+
+test "extract_opt: if let → is" {
+  assert_eq(extract_opt(Some(42)), 42)
+  assert_eq(extract_opt(None), 0)
+}
+
+test "sign: match with guard" {
+  assert_eq(sign(5), 1)
+  assert_eq(sign(-3), -1)
+  assert_eq(sign(0), 0)
+}
+
+test "fizzbuzz: nested if" {
+  assert_eq(fizzbuzz(15), 0)
+  assert_eq(fizzbuzz(3), 1)
+  assert_eq(fizzbuzz(5), 2)
+  assert_eq(fizzbuzz(7), 3)
+}
+
+test "quadratic: multiple let" {
+  assert_eq(quadratic(2.0, 3.0, 1.0, 2.0), 15.0)
+}
+
+test "all_positive: bool ops" {
+  assert_eq(all_positive(1, 2, 3), true)
+  assert_eq(all_positive(1, -2, 3), false)
+}
+
+test "any_zero: bool ops" {
+  assert_eq(any_zero(1, 0, 3), true)
+  assert_eq(any_zero(1, 2, 3), false)
+}
+

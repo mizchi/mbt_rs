@@ -55,9 +55,10 @@ fn print_visibility(buf: &mut String, vis: &Visibility) {
 fn print_fn(buf: &mut String, f: &ItemFn, level: usize) {
     indent(buf, level);
     print_visibility(buf, &f.vis);
-    buf.push_str("fn ");
-    buf.push_str(&f.sig.ident.to_string());
+    buf.push_str("fn");
     print_generics(buf, &f.sig.generics);
+    buf.push(' ');
+    buf.push_str(&f.sig.ident.to_string());
     buf.push('(');
     print_fn_params(buf, &f.sig.inputs);
     buf.push(')');

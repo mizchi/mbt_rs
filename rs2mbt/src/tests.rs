@@ -35,7 +35,7 @@ fn test_unit_return_omitted() {
 fn test_generic_function() {
     assert_rs2mbt(
         "fn identity<T>(x: T) -> T { x }",
-        "fn identity[T](x : T) -> T {\n  x\n}",
+        "fn[T] identity(x : T) -> T {\n  x\n}",
     );
 }
 
@@ -600,7 +600,7 @@ fn test_multiple_params_no_return() {
 fn test_generic_with_bounds() {
     assert_rs2mbt(
         "fn print_it<T: Display>(x: T) {}",
-        "fn print_it[T : Display](x : T) {\n\n}",
+        "fn[T : Display] print_it(x : T) {\n\n}",
     );
 }
 
@@ -731,7 +731,7 @@ fn test_nested_method_calls() {
 fn test_multiple_trait_bounds() {
     assert_rs2mbt(
         "fn show<T: Display + Debug>(x: T) {}",
-        "fn show[T : Display + Debug](x : T) {\n\n}",
+        "fn[T : Display + Debug] show(x : T) {\n\n}",
     );
 }
 

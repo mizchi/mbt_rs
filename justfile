@@ -38,8 +38,29 @@ cargo-test:
 cargo-check:
     cd rs2mbt && cargo check
 
-# Run all tests (MoonBit + Rust)
-test-all: test cargo-test
+# Verify rs2mbt output passes moon check + moon test
+moon-check-rs2mbt:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    cargo build -q --manifest-path "$root/rs2mbt/Cargo.toml"
+    tmpdir=$(mktemp -d)
+    trap 'rm -rf "$tmpdir"' EXIT
+    # Setup MoonBit project
+    echo '{"name":"test_rs2mbt","version":"0.1.0"}' > "$tmpdir/moon.mod.json"
+    mkdir -p "$tmpdir/src"
+    touch "$tmpdir/src/moon.pkg"
+    # Generate MoonBit from Rust fixtures + append test blocks
+    "$root/rs2mbt/target/debug/rs2mbt" "$root/fixtures/input.rs" > "$tmpdir/src/generated.mbt"
+    echo "" >> "$tmpdir/src/generated.mbt"
+    cat "$root/fixtures/generated_test.mbt" >> "$tmpdir/src/generated.mbt"
+    # Run moon check and test
+    cd "$tmpdir"
+    moon check
+    moon test --target js
+
+# Run all tests (MoonBit + Rust + cross-validation)
+test-all: test cargo-test moon-check-rs2mbt
 
 # CI checks
-ci: fmt-check info-check check test cargo-test
+ci: fmt-check info-check check test cargo-test moon-check-rs2mbt

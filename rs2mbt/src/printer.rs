@@ -6,8 +6,10 @@ use syn::*;
 thread_local! {
     /// Track wrapper types (Rc, Arc, RefCell, Mutex) used during conversion.
     static USED_WRAPPER_TYPES: RefCell<BTreeSet<String>> = RefCell::new(BTreeSet::new());
-    /// Current impl block's self type name (for resolving Self).
+    /// Current impl block's self type name (for resolving Self), e.g., "Stack"
     static CURRENT_SELF_TYPE: RefCell<String> = RefCell::new(String::new());
+    /// Current impl block's self type with generics, e.g., "Stack[T]"
+    static CURRENT_SELF_TYPE_FULL: RefCell<String> = RefCell::new(String::new());
 }
 
 fn record_wrapper_type(name: &str) {
@@ -24,12 +26,29 @@ fn set_self_type(name: &str) {
     CURRENT_SELF_TYPE.with(|s| *s.borrow_mut() = name.to_string());
 }
 
+fn set_self_type_full(name: &str) {
+    CURRENT_SELF_TYPE_FULL.with(|s| *s.borrow_mut() = name.to_string());
+}
+
 fn clear_self_type() {
     CURRENT_SELF_TYPE.with(|s| s.borrow_mut().clear());
+    CURRENT_SELF_TYPE_FULL.with(|s| s.borrow_mut().clear());
 }
 
 fn get_self_type() -> String {
     CURRENT_SELF_TYPE.with(|s| s.borrow().clone())
+}
+
+fn get_self_type_full() -> String {
+    CURRENT_SELF_TYPE_FULL.with(|s| {
+        let full = s.borrow().clone();
+        if full.is_empty() {
+            // Fallback to name only
+            CURRENT_SELF_TYPE.with(|s2| s2.borrow().clone())
+        } else {
+            full
+        }
+    })
 }
 
 /// Convert Rust source code to MoonBit source code.
@@ -345,7 +364,7 @@ fn print_fn_params(buf: &mut String, inputs: &punctuated::Punctuated<FnArg, toke
         first = false;
         match arg {
             FnArg::Receiver(_) => {
-                let self_ty = get_self_type();
+                let self_ty = get_self_type_full();
                 if !self_ty.is_empty() {
                     buf.push_str("self : ");
                     buf.push_str(&self_ty);
@@ -379,10 +398,15 @@ fn print_type(buf: &mut String, ty: &Type) {
         Type::Path(tp) => {
             if let Some(seg) = tp.path.segments.last() {
                 let ident_str = seg.ident.to_string();
-                // Resolve Self to the actual type name from enclosing impl block
+                // Resolve Self to the actual type with generics from enclosing impl block
                 let ident_str = if ident_str == "Self" {
-                    let self_ty = get_self_type();
-                    if !self_ty.is_empty() { self_ty } else { ident_str }
+                    let self_ty = get_self_type_full();
+                    if !self_ty.is_empty() {
+                        // Self is already fully resolved with generics, write directly and return
+                        buf.push_str(&self_ty);
+                        return;
+                    }
+                    ident_str
                 } else {
                     ident_str
                 };
@@ -682,7 +706,24 @@ fn print_impl(buf: &mut String, i: &ItemImpl, level: usize) {
     // Set Self type for resolution within the impl block
     if let Type::Path(tp) = i.self_ty.as_ref() {
         if let Some(seg) = tp.path.segments.last() {
-            set_self_type(&seg.ident.to_string());
+            let name = seg.ident.to_string();
+            set_self_type(&name);
+            // Build full type with generics: Stack[T], LinearMap[K, V], etc.
+            // Use impl's generic params (impl<T> Stack<T> → T comes from impl generics)
+            let type_params: Vec<_> = i.generics.params.iter()
+                .filter_map(|p| {
+                    if let GenericParam::Type(t) = p {
+                        Some(t.ident.to_string())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            if type_params.is_empty() {
+                set_self_type_full(&name);
+            } else {
+                set_self_type_full(&format!("{}[{}]", name, type_params.join(", ")));
+            }
         }
     }
     if let Some((_, path, _)) = &i.trait_ {
@@ -838,11 +879,11 @@ fn print_path(buf: &mut String, path: &Path) {
         }
         first = false;
         let seg_str = seg.ident.to_string();
-        // Resolve Self
+        // Resolve Self (use name only in paths, not full generic type)
         let seg_str = if seg_str == "Self" {
             let self_ty = get_self_type();
             if !self_ty.is_empty() {
-                self_ty
+                self_ty // Use name only for paths like Self::new()
             } else {
                 seg_str
             }

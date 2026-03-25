@@ -136,7 +136,7 @@ mod tests {
     fn roundtrip_where_clause_fn() {
         assert_roundtrip_structure(
             "impl<K: Eq, V> Map<K, V> { pub fn retain<F>(&mut self, keep_fn: F) where F: FnMut(&K, &mut V) -> bool { } }",
-            &["fn Map::retain(self : Map, keep_fn : (K, V) -> Bool)"],
+            &["fn Map::retain(self : Map[K, V], keep_fn : (K, V) -> Bool)"],
         );
     }
 

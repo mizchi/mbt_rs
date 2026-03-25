@@ -1,31 +1,31 @@
 # mbt_rs
 
-MoonBit と Rust の双方向トランスパイラ。
+Bidirectional transpiler between MoonBit and Rust.
 
-構文レベルの変換を中心に、標準ライブラリの API マッピング、所有権/ライフタイムの除去、async 構文の変換などを行う。完全な変換は目指さず、できる限り変換した上で、残りは TODO コメントとしてユーザーに委ねる方針。
+Focuses on syntax-level conversion with standard library API mapping, ownership/lifetime stripping, and async syntax conversion. Does not aim for perfect conversion — converts as much as possible and leaves the rest as TODO comments for manual fixing.
 
-## インストール
+## Install
 
 ```bash
 # rs2mbt (Rust → MoonBit) CLI
 cd rs2mbt && cargo build --release
-# バイナリ: rs2mbt/target/release/rs2mbt
+# Binary: rs2mbt/target/release/rs2mbt
 ```
 
-mbt2rs (MoonBit → Rust) は MoonBit ライブラリとして利用。
+mbt2rs (MoonBit → Rust) is available as a MoonBit library.
 
-## 使い方
+## Usage
 
 ### Rust → MoonBit
 
 ```bash
-# 単一ファイル変換
+# Single file conversion
 rs2mbt input.rs > output.mbt
 
-# マクロ展開してから変換 (推奨)
+# Convert with macro expansion (recommended for real projects)
 just expand-and-convert path/to/rust/crate > output.mbt
 
-# 変換品質レポート
+# Quality report
 rs2mbt --report input.rs
 ```
 
@@ -35,26 +35,26 @@ rs2mbt --report input.rs
 let rust_code = @to_rust.to_rust(impls)
 ```
 
-### 品質レポート
+### Quality Report
 
 ```bash
 just quality-report path/to/file.rs
-just quality-report-all  # fixtures/real_projects/ 全体
+just quality-report-all
 ```
 
-実プロジェクトでの変換率:
+Results on real projects:
 
-| ファイル | 行数 | 変換率 | 備考 |
-|---------|------|--------|------|
-| calculator.rs | 211 | 100% | 式木 + eval + simplify |
-| stack.rs | 114 | 100% | ジェネリックスタック |
-| quality_test.rs | 181 | 97% | 混合パターン |
-| linear_map.rs | 606 | 93% | Vec ベース Map |
-| `cargo expand` 後 | - | 99% | マクロ展開で向上 |
+| File | Lines | Conversion | Notes |
+|------|-------|-----------|-------|
+| calculator.rs | 211 | 100% | Expression tree + eval + simplify |
+| stack.rs | 114 | 100% | Generic stack |
+| quality_test.rs | 181 | 97% | Mixed patterns |
+| linear_map.rs | 606 | 93% | Vec-based map |
+| After `cargo expand` | — | 99% | Macro expansion eliminates most TODOs |
 
-## 変換対応表
+## Conversion Reference
 
-### 型
+### Types
 
 | Rust | MoonBit |
 |------|---------|
@@ -73,9 +73,9 @@ just quality-report-all  # fixtures/real_projects/ 全体
 | `Option<T>` | `Option[T]` |
 | `Result<T,E>` | `Result[T,E]` |
 | `&[u8]` | `Bytes` |
-| `Box<T>` / `Rc<T>` / `Arc<T>` | `T` (GC で不要) |
+| `Box<T>` / `Rc<T>` / `Arc<T>` | `T` (GC'd, wrapper stripped) |
 
-### 構文
+### Syntax
 
 | Rust | MoonBit |
 |------|---------|
@@ -83,7 +83,7 @@ just quality-report-all  # fixtures/real_projects/ 全体
 | `impl<T> S<T> { fn m(&self) }` | `fn S::m(self: S[T])` |
 | `#[derive(Debug, Eq)]` | `} derive(Show, Eq)` |
 | `if let Some(x) = opt` | `if opt is Some(x)` |
-| `expr.await` | `expr` (await 不要) |
+| `expr.await` | `expr` (no await needed) |
 | `vec![1,2,3]` | `[1,2,3]` |
 | `format!("{} {}", a, b)` | `"\{a} \{b}"` |
 | `assert_eq!(a, b)` | `assert_eq(a, b)` |
@@ -91,8 +91,8 @@ just quality-report-all  # fixtures/real_projects/ 全体
 | `String::from("s")` | `"s"` |
 | `Vec::new()` | `[]` |
 | `Box::new(x)` | `x` |
-| `x.clone()` | `x` (GC) |
-| `x.borrow()` | `x` (GC) |
+| `x.clone()` | `x` (GC'd) |
+| `x.borrow()` | `x` (GC'd) |
 | `x.len()` | `x.length()` |
 | `x.to_lowercase()` | `x.to_lower()` |
 | `#[test] fn test_foo()` | `test "foo" { }` |
@@ -101,58 +101,58 @@ just quality-report-all  # fixtures/real_projects/ 全体
 | `loop { }` | `while true { }` |
 | `for (a,b) in v` | `for _item in v { let (a,b) = _item }` |
 
-### 所有権 / ライフタイム
+### Ownership / Lifetimes
 
-全て除去。MoonBit は GC。
+All stripped. MoonBit is garbage-collected.
 
 | Rust | MoonBit |
 |------|---------|
 | `&T` / `&mut T` | `T` |
 | `*const T` / `*mut T` | `T` |
 | `Box<T>` | `T` |
-| `Rc<T>` / `Arc<T>` | `T` (NOTE コメント付き) |
+| `Rc<T>` / `Arc<T>` | `T` (with NOTE comment) |
 | `Cell<T>` / `RefCell<T>` | `T` |
-| `'a` ライフタイム | 除去 |
+| `'a` lifetime params | removed |
 | `*expr` (deref) | `expr` |
 
-### Iterator 系 trait impl
+### Iterator Trait Impls
 
 | Rust | MoonBit |
 |------|---------|
-| `impl Iterator for X` | スキップ (`.iter()` / `for-in` で対応) |
-| `impl IntoIterator` | スキップ |
-| `impl Clone` / `Copy` | 除去 |
-| `impl Index` | スキップ (`op_get` / `op_set`) |
-| `impl Extend` | スキップ |
+| `impl Iterator for X` | skipped (use `.iter()` / `for-in`) |
+| `impl IntoIterator` | skipped |
+| `impl Clone` / `Copy` | removed |
+| `impl Index` | skipped (`op_get` / `op_set`) |
+| `impl Extend` | skipped |
 
-### 未対応 (TODO コメント出力)
+### Unsupported (emits TODO comments)
 
-- `macro_rules!` 定義 → `cargo expand` で解決
-- `unsafe` ブロック → コメント付きで除去
-- `tokio::select!` → MoonBit に対応なし
-- 複雑な trait object / dynamic dispatch
+- `macro_rules!` definitions — use `cargo expand` to resolve
+- `unsafe` blocks — stripped with comment
+- `tokio::select!` — no MoonBit equivalent
+- Complex trait objects / dynamic dispatch
 
-## テスト
+## Testing
 
 ```bash
-# 全テスト実行
+# Run all tests
 just test-all
 
-# 内訳
-just test          # mbt2rs MoonBit テスト (100)
-just cargo-test    # rs2mbt Rust テスト (139)
-just behavioral-test  # 双方向 behavioral equivalence (Rust 72 + MoonBit 74)
+# Individual suites
+just test            # mbt2rs MoonBit tests (100)
+just cargo-test      # rs2mbt Rust tests (139)
+just behavioral-test # Behavioral equivalence (Rust 72 + MoonBit 74)
 ```
 
-behavioral test は同じ関数に対して Rust と MoonBit で同じアサーションを実行し、変換後のコードが元と同じ結果を返すことを検証する。
+The behavioral test runs the same assertions in both Rust (`cargo test`) and MoonBit (`moon test`) to verify that converted code produces identical results.
 
 ## CI
 
-GitHub Actions で 3 ジョブ:
-- **MoonBit**: lint + type check + mbt2rs テスト
-- **Rust**: rs2mbt ユニットテスト + ラウンドトリップテスト
-- **Behavioral equivalence**: Rust cargo test + 変換後 MoonBit moon test
+GitHub Actions with 3 jobs:
+- **MoonBit**: lint + type check + mbt2rs tests
+- **Rust**: rs2mbt unit tests + roundtrip tests
+- **Behavioral equivalence**: Rust cargo test + converted MoonBit moon test
 
-## ライセンス
+## License
 
 MIT

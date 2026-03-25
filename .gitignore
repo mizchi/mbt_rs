@@ -1,3 +1,5 @@
 target/
 _build/
 .mooncakes/
+# Generated files (regenerate with rs2mbt CLI)
+fixtures/real_projects/*.mbt

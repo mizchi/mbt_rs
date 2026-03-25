@@ -81,6 +81,19 @@ behavioral-test:
     moon test --target js
     echo "=== Both pass: behavioral equivalence confirmed ==="
 
+# Generate MoonBit from real Rust projects (for inspection, not CI)
+generate-real-projects:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    cargo build -q --manifest-path "$root/rs2mbt/Cargo.toml"
+    for f in "$root"/fixtures/real_projects/*.rs; do
+        base=$(basename "$f" .rs)
+        echo "Generating $base.mbt..."
+        "$root/rs2mbt/target/debug/rs2mbt" "$f" > "$root/fixtures/real_projects/${base}.mbt"
+    done
+    echo "Done. Check fixtures/real_projects/*.mbt"
+
 # Run all tests (MoonBit + Rust + behavioral equivalence)
 test-all: test cargo-test behavioral-test
 

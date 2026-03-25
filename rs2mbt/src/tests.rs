@@ -5,6 +5,8 @@ fn assert_rs2mbt(rust_src: &str, expected: &str) {
     assert_eq!(result.trim(), expected.trim(), "\n--- got ---\n{}\n--- expected ---\n{}", result.trim(), expected.trim());
 }
 
+// === Basic functions ===
+
 #[test]
 fn test_simple_function() {
     assert_rs2mbt(
@@ -22,10 +24,52 @@ fn test_pub_function() {
 }
 
 #[test]
+fn test_unit_return_omitted() {
+    assert_rs2mbt(
+        "fn noop() {}",
+        "fn noop() {\n\n}",
+    );
+}
+
+#[test]
+fn test_generic_function() {
+    assert_rs2mbt(
+        "fn identity<T>(x: T) -> T { x }",
+        "fn identity[T](x : T) -> T {\n  x\n}",
+    );
+}
+
+// === Type definitions ===
+
+#[test]
 fn test_struct() {
     assert_rs2mbt(
         "struct Point { x: i32, y: i32 }",
         "struct Point {\n  x : Int\n  y : Int\n}",
+    );
+}
+
+#[test]
+fn test_pub_struct() {
+    assert_rs2mbt(
+        "pub struct Color { pub r: u8, pub g: u8, pub b: u8 }",
+        "pub struct Color {\n  r : Byte\n  g : Byte\n  b : Byte\n}",
+    );
+}
+
+#[test]
+fn test_tuple_struct() {
+    assert_rs2mbt(
+        "struct Wrapper(i32);",
+        "struct Wrapper(Int)",
+    );
+}
+
+#[test]
+fn test_generic_struct() {
+    assert_rs2mbt(
+        "struct Pair<A, B> { first: A, second: B }",
+        "struct Pair[A, B] {\n  first : A\n  second : B\n}",
     );
 }
 
@@ -46,6 +90,22 @@ fn test_enum_with_payload() {
 }
 
 #[test]
+fn test_enum_struct_variant() {
+    assert_rs2mbt(
+        "enum Expr { Lit(i32), BinOp { op: String, lhs: i32, rhs: i32 } }",
+        "enum Expr {\n  Lit(Int)\n  BinOp(op~ : String, lhs~ : Int, rhs~ : Int)\n}",
+    );
+}
+
+#[test]
+fn test_generic_enum() {
+    assert_rs2mbt(
+        "enum MyResult<T, E> { Ok(T), Err(E) }",
+        "enum MyResult[T, E] {\n  Ok(T)\n  Err(E)\n}",
+    );
+}
+
+#[test]
 fn test_type_alias() {
     assert_rs2mbt(
         "type Score = i32;",
@@ -60,6 +120,16 @@ fn test_const() {
         "const MAX : Int = 100",
     );
 }
+
+#[test]
+fn test_derive() {
+    assert_rs2mbt(
+        "#[derive(Debug, PartialEq, Eq)]\nstruct Point { x: i32, y: i32 }",
+        "derive(Show, Eq)struct Point {\n  x : Int\n  y : Int\n}",
+    );
+}
+
+// === Let bindings ===
 
 #[test]
 fn test_let_binding() {
@@ -78,6 +148,32 @@ fn test_let_mut() {
 }
 
 #[test]
+fn test_let_with_type() {
+    assert_rs2mbt(
+        "fn foo() -> i32 { let x: i32 = 42; x }",
+        "fn foo() -> Int {\n  let x : Int = 42\n  x\n}",
+    );
+}
+
+#[test]
+fn test_let_tuple_destructure() {
+    assert_rs2mbt(
+        "fn foo() -> i32 { let (a, _) = (1, 2); a }",
+        "fn foo() -> Int {\n  let (a, _) = (1, 2)\n  a\n}",
+    );
+}
+
+#[test]
+fn test_multiple_lets() {
+    assert_rs2mbt(
+        "fn foo() -> i32 { let a = 1; let b = 2; let c = 3; a + b + c }",
+        "fn foo() -> Int {\n  let a = 1\n  let b = 2\n  let c = 3\n  a + b + c\n}",
+    );
+}
+
+// === Control flow ===
+
+#[test]
 fn test_if_else() {
     assert_rs2mbt(
         "fn max(a: i32, b: i32) -> i32 { if a > b { a } else { b } }",
@@ -86,34 +182,42 @@ fn test_if_else() {
 }
 
 #[test]
+fn test_nested_if() {
+    assert_rs2mbt(
+        "fn clamp(x: i32, lo: i32, hi: i32) -> i32 { if x < lo { lo } else { if x > hi { hi } else { x } } }",
+        "fn clamp(x : Int, lo : Int, hi : Int) -> Int {\n  if x < lo {\n    lo\n  } else {\n    if x > hi {\n      hi\n    } else {\n      x\n    }\n  }\n}",
+    );
+}
+
+#[test]
 fn test_match() {
     assert_rs2mbt(
-        r#"fn describe(x: i32) -> String { match x { 0 => String::new(), _ => String::new() } }"#,
-        "fn describe(x : Int) -> String {\n  match x {\n    0 => String.new()\n    _ => String.new()\n  }\n}",
+        r#"fn describe(x: i32) -> &str { match x { 0 => "zero", _ => "other" } }"#,
+        "fn describe(x : Int) -> String {\n  match x {\n    0 => \"zero\"\n    _ => \"other\"\n  }\n}",
     );
 }
 
 #[test]
-fn test_generic_function() {
+fn test_match_with_guard() {
     assert_rs2mbt(
-        "fn identity<T>(x: T) -> T { x }",
-        "fn identity[T](x : T) -> T {\n  x\n}",
+        r#"fn classify(x: i32) -> &str { match x { n if n > 0 => "pos", _ => "other" } }"#,
+        "fn classify(x : Int) -> String {\n  match x {\n    n if n > 0 => \"pos\"\n    _ => \"other\"\n  }\n}",
     );
 }
 
 #[test]
-fn test_tuple() {
+fn test_match_option() {
     assert_rs2mbt(
-        "fn swap(a: i32, b: i32) -> (i32, i32) { (b, a) }",
-        "fn swap(a : Int, b : Int) -> (Int, Int) {\n  (b, a)\n}",
+        "fn unwrap_or(opt: Option<i32>, default: i32) -> i32 { match opt { Some(v) => v, None => default } }",
+        "fn unwrap_or(opt : Option[Int], default : Int) -> Int {\n  match opt {\n    Some(v) => v\n    None => default\n  }\n}",
     );
 }
 
 #[test]
-fn test_array_literal() {
+fn test_match_or_pattern() {
     assert_rs2mbt(
-        "fn nums() -> Vec<i32> { vec![1, 2, 3] }",
-        "fn nums() -> Array[Int] {\n  [1 , 2 , 3]\n}",
+        "fn is_weekend(day: i32) -> bool { match day { 6 | 7 => true, _ => false } }",
+        "fn is_weekend(day : Int) -> Bool {\n  match day {\n    6 | 7 => true\n    _ => false\n  }\n}",
     );
 }
 
@@ -134,6 +238,40 @@ fn test_for_loop() {
 }
 
 #[test]
+fn test_return_early() {
+    assert_rs2mbt(
+        "fn check(x: i32) -> i32 { if x < 0 { return 0; } x }",
+        "fn check(x : Int) -> Int {\n  if x < 0 {\n    return 0\n  }\n  x\n}",
+    );
+}
+
+#[test]
+fn test_break_continue() {
+    assert_rs2mbt(
+        "fn find() -> i32 { let mut i = 0; while true { if i > 5 { break; } i = i + 1; } i }",
+        "fn find() -> Int {\n  let mut i = 0\n  while true {\n    if i > 5 {\n      break\n    }\n    i = i + 1\n  }\n  i\n}",
+    );
+}
+
+// === Expressions ===
+
+#[test]
+fn test_tuple() {
+    assert_rs2mbt(
+        "fn swap(a: i32, b: i32) -> (i32, i32) { (b, a) }",
+        "fn swap(a : Int, b : Int) -> (Int, Int) {\n  (b, a)\n}",
+    );
+}
+
+#[test]
+fn test_array_literal() {
+    assert_rs2mbt(
+        "fn nums() -> Vec<i32> { vec![1, 2, 3] }",
+        "fn nums() -> Array[Int] {\n  [1 , 2 , 3]\n}",
+    );
+}
+
+#[test]
 fn test_option_type() {
     assert_rs2mbt(
         "fn find(x: i32) -> Option<i32> { None }",
@@ -150,6 +288,54 @@ fn test_unary_neg() {
 }
 
 #[test]
+fn test_not_operator() {
+    assert_rs2mbt(
+        "fn invert(b: bool) -> bool { !b }",
+        "fn invert(b : Bool) -> Bool {\n  not(b)\n}",
+    );
+}
+
+#[test]
+fn test_comparison_operators() {
+    assert_rs2mbt(
+        "fn cmp(a: i32, b: i32) -> bool { a == b || a != b && a <= b }",
+        "fn cmp(a : Int, b : Int) -> Bool {\n  a == b || a != b && a <= b\n}",
+    );
+}
+
+#[test]
+fn test_field_access() {
+    assert_rs2mbt(
+        "fn get_x(p: Point) -> i32 { p.x }",
+        "fn get_x(p : Point) -> Int {\n  p.x\n}",
+    );
+}
+
+#[test]
+fn test_method_call() {
+    assert_rs2mbt(
+        "fn len(s: String) -> usize { s.len() }",
+        "fn len(s : String) -> Int {\n  s.length()\n}",
+    );
+}
+
+#[test]
+fn test_method_call_with_arg() {
+    assert_rs2mbt(
+        "fn push_val(arr: Vec<i32>, v: i32) { arr.push(v); }",
+        "fn push_val(arr : Array[Int], v : Int) {\n  arr.push(v)\n}",
+    );
+}
+
+#[test]
+fn test_chained_method() {
+    assert_rs2mbt(
+        "fn process(s: String) -> usize { s.trim().len() }",
+        "fn process(s : String) -> Int {\n  s.trim().length()\n}",
+    );
+}
+
+#[test]
 fn test_closure() {
     assert_rs2mbt(
         "fn apply(f: fn(i32) -> i32, x: i32) -> i32 { f(x) }",
@@ -158,17 +344,117 @@ fn test_closure() {
 }
 
 #[test]
-fn test_unit_return_omitted() {
+fn test_closure_expr() {
     assert_rs2mbt(
-        "fn noop() {}",
-        "fn noop() {\n\n}",
+        "fn foo() -> i32 { let f = |x: i32| x + 1; f(10) }",
+        "fn foo() -> Int {\n  let f = fn(x : Int) { x + 1 }\n  f(10)\n}",
     );
 }
 
 #[test]
-fn test_derive() {
+fn test_index_access() {
     assert_rs2mbt(
-        "#[derive(Debug, PartialEq, Eq)]\nstruct Point { x: i32, y: i32 }",
-        "derive(Show, Eq)struct Point {\n  x : Int\n  y : Int\n}",
+        "fn first(arr: Vec<i32>) -> i32 { arr[0] }",
+        "fn first(arr : Array[Int]) -> Int {\n  arr[0]\n}",
+    );
+}
+
+#[test]
+fn test_index_assign() {
+    assert_rs2mbt(
+        "fn set_first(arr: Vec<i32>) { arr[0] = 99; }",
+        "fn set_first(arr : Array[Int]) {\n  arr[0] = 99\n}",
+    );
+}
+
+#[test]
+fn test_struct_literal() {
+    assert_rs2mbt(
+        "fn origin() -> Point { Point { x: 0, y: 0 } }",
+        "fn origin() -> Point {\n  { x: 0, y: 0 }\n}",
+    );
+}
+
+#[test]
+fn test_record_update() {
+    assert_rs2mbt(
+        "fn move_right(p: Point) -> Point { Point { x: p.x + 1, ..p } }",
+        "fn move_right(p : Point) -> Point {\n  { ..p, x: p.x + 1 }\n}",
+    );
+}
+
+#[test]
+fn test_cast() {
+    assert_rs2mbt(
+        "fn to_i64(x: i32) -> i64 { x as i64 }",
+        "fn to_i64(x : Int) -> Int64 {\n  (x : Int64)\n}",
+    );
+}
+
+#[test]
+fn test_try_operator() {
+    assert_rs2mbt(
+        "fn maybe() -> Result<i32, String> { let x = foo()?; Ok(x) }",
+        "fn maybe() -> Result[Int, String] {\n  let x = foo()!\n  Ok(x)\n}",
+    );
+}
+
+#[test]
+fn test_assert_macro() {
+    assert_rs2mbt(
+        "fn check() { assert_eq!(1, 1); }",
+        "fn check() {\n  assert_eq(1 , 1)\n}",
+    );
+}
+
+#[test]
+fn test_println_macro() {
+    assert_rs2mbt(
+        r#"fn hello() { println!("hello"); }"#,
+        "fn hello() {\n  println(\"hello\")\n}",
+    );
+}
+
+#[test]
+fn test_todo_macro() {
+    assert_rs2mbt(
+        "fn placeholder() -> i32 { todo!() }",
+        "fn placeholder() -> Int {\n  ...\n}",
+    );
+}
+
+// === Trait ===
+
+#[test]
+fn test_trait() {
+    assert_rs2mbt(
+        "trait Printable { fn to_string(&self) -> String; }",
+        "trait Printable {\n  to_string(self) -> String\n}",
+    );
+}
+
+#[test]
+fn test_trait_with_super() {
+    assert_rs2mbt(
+        "trait Drawable: Display { fn draw(&self); }",
+        "trait Drawable : Display {\n  draw(self)\n}",
+    );
+}
+
+// === Types ===
+
+#[test]
+fn test_all_numeric_types() {
+    assert_rs2mbt(
+        "fn types(a: i32, b: u32, c: i64, d: u64, e: f32, f: f64) {}",
+        "fn types(a : Int, b : UInt, c : Int64, d : UInt64, e : Float, f : Double) {\n\n}",
+    );
+}
+
+#[test]
+fn test_reference_dropped() {
+    assert_rs2mbt(
+        "fn len(s: &str) -> usize { s.len() }",
+        "fn len(s : String) -> Int {\n  s.length()\n}",
     );
 }

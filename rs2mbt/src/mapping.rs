@@ -16,6 +16,9 @@ pub fn lookup_type(name: &str) -> &str {
         "Option" => "Option",
         "Result" => "Result",
         "Box" => "Box",
+        "usize" => "Int",
+        "isize" => "Int",
+        "str" => "String",
         _ => name,
     }
 }

@@ -457,6 +457,13 @@ fn print_block_body(buf: &mut String, block: &Block, level: usize) {
 fn print_local(buf: &mut String, local: &Local, level: usize) {
     let is_mut = match &local.pat {
         Pat::Ident(pi) => pi.mutability.is_some(),
+        Pat::Type(pt) => {
+            if let Pat::Ident(pi) = pt.pat.as_ref() {
+                pi.mutability.is_some()
+            } else {
+                false
+            }
+        }
         _ => false,
     };
     if is_mut {
@@ -464,7 +471,15 @@ fn print_local(buf: &mut String, local: &Local, level: usize) {
     } else {
         buf.push_str("let ");
     }
-    print_pat(buf, &local.pat, level);
+    // Handle typed pattern: let x: Type = ...
+    match &local.pat {
+        Pat::Type(pt) => {
+            print_pat(buf, &pt.pat, level);
+            buf.push_str(" : ");
+            print_type(buf, &pt.ty);
+        }
+        _ => print_pat(buf, &local.pat, level),
+    }
     if let Some(init) = &local.init {
         buf.push_str(" = ");
         print_expr(buf, &init.expr, level);
@@ -659,6 +674,14 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
         }
         Expr::Struct(s) => {
             buf.push_str("{ ");
+            // MoonBit puts ..base before fields
+            if let Some(rest) = &s.rest {
+                buf.push_str("..");
+                print_expr(buf, rest, level);
+                if !s.fields.is_empty() {
+                    buf.push_str(", ");
+                }
+            }
             let mut first = true;
             for f in &s.fields {
                 if !first {
@@ -867,6 +890,11 @@ fn print_pat(buf: &mut String, pat: &Pat, level: usize) {
             buf.push_str(" }");
         }
         Pat::Lit(l) => print_lit(buf, &l.lit),
+        Pat::Type(pt) => {
+            print_pat(buf, &pt.pat, level);
+            buf.push_str(" : ");
+            print_type(buf, &pt.ty);
+        }
         Pat::Or(o) => {
             let mut first = true;
             for p in &o.cases {

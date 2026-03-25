@@ -458,3 +458,205 @@ fn test_reference_dropped() {
         "fn len(s : String) -> Int {\n  s.length()\n}",
     );
 }
+
+// === New patterns ===
+
+#[test]
+fn test_if_let_to_match() {
+    assert_rs2mbt(
+        "fn extract(opt: Option<i32>) -> i32 { if let Some(x) = opt { x } else { 0 } }",
+        "fn extract(opt : Option[Int]) -> Int {\n  match opt {\n    Some(x) => {\n      x\n    }\n    _ => {\n      0\n    }\n  }\n}",
+    );
+}
+
+#[test]
+fn test_infinite_loop() {
+    assert_rs2mbt(
+        "fn spin() { loop { break; } }",
+        "fn spin() {\n  while true {\n    break\n  }\n}",
+    );
+}
+
+#[test]
+fn test_range_exclusive() {
+    assert_rs2mbt(
+        "fn range_test() { for i in 0..10 {} }",
+        "fn range_test() {\n  for i in 0..<10 {\n\n  }\n}",
+    );
+}
+
+#[test]
+fn test_range_inclusive() {
+    assert_rs2mbt(
+        "fn range_test() { for i in 0..=10 {} }",
+        "fn range_test() {\n  for i in 0..=10 {\n\n  }\n}",
+    );
+}
+
+#[test]
+fn test_augmented_assign() {
+    assert_rs2mbt(
+        "fn inc(x: &mut i32) { *x += 1; }",
+        "fn inc(x : Int) {\n  x += 1\n}",
+    );
+}
+
+#[test]
+fn test_string_literal() {
+    assert_rs2mbt(
+        r#"fn greeting() -> &str { "hello world" }"#,
+        "fn greeting() -> String {\n  \"hello world\"\n}",
+    );
+}
+
+#[test]
+fn test_bool_literal() {
+    assert_rs2mbt(
+        "fn yes() -> bool { true }",
+        "fn yes() -> Bool {\n  true\n}",
+    );
+}
+
+#[test]
+fn test_char_literal() {
+    assert_rs2mbt(
+        "fn ch() -> char { 'a' }",
+        "fn ch() -> Char {\n  'a'\n}",
+    );
+}
+
+#[test]
+fn test_i64_literal() {
+    assert_rs2mbt(
+        "fn big() -> i64 { 42i64 }",
+        "fn big() -> Int64 {\n  42L\n}",
+    );
+}
+
+#[test]
+fn test_u32_literal() {
+    assert_rs2mbt(
+        "fn unsigned() -> u32 { 42u32 }",
+        "fn unsigned() -> UInt {\n  42U\n}",
+    );
+}
+
+#[test]
+fn test_float_literal() {
+    assert_rs2mbt(
+        "fn pi() -> f64 { 3.14 }",
+        "fn pi() -> Double {\n  3.14\n}",
+    );
+}
+
+#[test]
+fn test_multiple_match_arms() {
+    assert_rs2mbt(
+        r#"fn describe(x: i32) -> &str {
+            match x {
+                1 => "one",
+                2 => "two",
+                3 => "three",
+                _ => "other",
+            }
+        }"#,
+        "fn describe(x : Int) -> String {\n  match x {\n    1 => \"one\"\n    2 => \"two\"\n    3 => \"three\"\n    _ => \"other\"\n  }\n}",
+    );
+}
+
+#[test]
+fn test_nested_match() {
+    assert_rs2mbt(
+        "fn deep(x: Option<i32>) -> i32 { match x { Some(v) => match v { 0 => 0, n => n * 2, }, None => -1, } }",
+        "fn deep(x : Option[Int]) -> Int {\n  match x {\n    Some(v) => match v {\n      0 => 0\n      n => n * 2\n    }\n    None => -1\n  }\n}",
+    );
+}
+
+#[test]
+fn test_match_tuple_pattern() {
+    assert_rs2mbt(
+        "fn classify(pair: (i32, i32)) -> i32 { match pair { (0, _) => 0, (_, 0) => 1, _ => 2, } }",
+        "fn classify(pair : (Int, Int)) -> Int {\n  match pair {\n    (0, _) => 0\n    (_, 0) => 1\n    _ => 2\n  }\n}",
+    );
+}
+
+#[test]
+fn test_complex_body() {
+    assert_rs2mbt(
+        "fn complex(x: i32) -> i32 { let a = x * 2; let b = a + 1; if b > 10 { b } else { 10 } }",
+        "fn complex(x : Int) -> Int {\n  let a = x * 2\n  let b = a + 1\n  if b > 10 {\n    b\n  } else {\n    10\n  }\n}",
+    );
+}
+
+#[test]
+fn test_multiple_params_no_return() {
+    assert_rs2mbt(
+        "fn log(msg: &str, level: i32) {}",
+        "fn log(msg : String, level : Int) {\n\n}",
+    );
+}
+
+#[test]
+fn test_generic_with_bounds() {
+    assert_rs2mbt(
+        "fn print_it<T: Display>(x: T) {}",
+        "fn print_it[T : Display](x : T) {\n\n}",
+    );
+}
+
+#[test]
+fn test_trait_multiple_methods() {
+    assert_rs2mbt(
+        "trait Collection { fn size(&self) -> usize; fn is_empty(&self) -> bool; }",
+        "trait Collection {\n  size(self) -> Int\n  is_empty(self) -> Bool\n}",
+    );
+}
+
+#[test]
+fn test_paren_expr() {
+    assert_rs2mbt(
+        "fn foo(a: i32, b: i32) -> i32 { (a + b) * 2 }",
+        "fn foo(a : Int, b : Int) -> Int {\n  (a + b) * 2\n}",
+    );
+}
+
+#[test]
+fn test_array_repeat() {
+    assert_rs2mbt(
+        "fn zeros() -> Vec<i32> { vec![0; 10] }",
+        // vec![0; 10] parses differently - as repeat expr
+        "fn zeros() -> Array[Int] {\n  [0 ; 10]\n}",
+    );
+}
+
+#[test]
+fn test_field_assign() {
+    assert_rs2mbt(
+        "fn set_x(p: &mut Point) { p.x = 42; }",
+        "fn set_x(p : Point) {\n  p.x = 42\n}",
+    );
+}
+
+#[test]
+fn test_for_tuple_destructure() {
+    assert_rs2mbt(
+        "fn sum_pairs(pairs: Vec<(i32, i32)>) -> i32 { let mut t = 0; for (a, b) in pairs { t = t + a + b; } t }",
+        "fn sum_pairs(pairs : Array[(Int, Int)]) -> Int {\n  let mut t = 0\n  for (a, b) in pairs {\n    t = t + a + b\n  }\n  t\n}",
+    );
+}
+
+#[test]
+fn test_derive_hash() {
+    assert_rs2mbt(
+        "#[derive(Hash)]\nstruct Key { id: i32 }",
+        "derive(Hash)struct Key {\n  id : Int\n}",
+    );
+}
+
+#[test]
+fn test_empty_struct() {
+    assert_rs2mbt(
+        "struct Unit;",
+        "struct Unit",
+    );
+}

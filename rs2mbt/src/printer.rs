@@ -539,6 +539,40 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
             buf.push(')');
         }
         Expr::If(i) => {
+            // if let Some(x) = expr → match expr { Some(x) => ..., _ => ... }
+            if let Expr::Let(let_expr) = i.cond.as_ref() {
+                buf.push_str("match ");
+                print_expr(buf, &let_expr.expr, level);
+                buf.push_str(" {\n");
+                indent(buf, level + 1);
+                print_pat(buf, &let_expr.pat, level);
+                buf.push_str(" => {\n");
+                print_block_body(buf, &i.then_branch, level + 2);
+                buf.push('\n');
+                indent(buf, level + 1);
+                buf.push('}');
+                if let Some((_, else_expr)) = &i.else_branch {
+                    buf.push('\n');
+                    indent(buf, level + 1);
+                    buf.push_str("_ => {\n");
+                    if let Expr::Block(block) = else_expr.as_ref() {
+                        print_block_body(buf, &block.block, level + 2);
+                    } else {
+                        indent(buf, level + 2);
+                        print_expr(buf, else_expr, level + 2);
+                    }
+                    buf.push('\n');
+                    indent(buf, level + 1);
+                    buf.push('}');
+                } else {
+                    buf.push('\n');
+                    indent(buf, level + 1);
+                    buf.push_str("_ => ()");
+                }
+                buf.push('\n');
+                indent(buf, level);
+                buf.push('}');
+            } else {
             buf.push_str("if ");
             print_expr(buf, &i.cond, level);
             buf.push_str(" {\n");
@@ -558,6 +592,7 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
                 indent(buf, level);
                 buf.push('}');
             }
+            } // close else branch of if-let check
         }
         Expr::Match(m) => {
             buf.push_str("match ");
@@ -718,6 +753,53 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
         }
         Expr::Macro(m) => {
             print_expr_macro(buf, m, level);
+        }
+        Expr::Range(r) => {
+            // Rust range → MoonBit range (used in for loops or slicing)
+            if let Some(start) = &r.start {
+                print_expr(buf, start, level);
+            }
+            match &r.limits {
+                RangeLimits::HalfOpen(_) => buf.push_str("..<"),
+                RangeLimits::Closed(_) => buf.push_str("..="),
+            }
+            if let Some(end) = &r.end {
+                print_expr(buf, end, level);
+            }
+        }
+        Expr::Repeat(r) => {
+            // [expr; n] → Array::make(n, expr)
+            buf.push_str("Array::make(");
+            print_expr(buf, &r.len, level);
+            buf.push_str(", ");
+            print_expr(buf, &r.expr, level);
+            buf.push(')');
+        }
+        Expr::Let(l) => {
+            // if let pattern = expr (used in if/while let)
+            print_pat(buf, &l.pat, level);
+            buf.push_str(" = ");
+            print_expr(buf, &l.expr, level);
+        }
+        Expr::Loop(l) => {
+            // loop { body } → while true { body }
+            buf.push_str("while true {\n");
+            print_block_body(buf, &l.body, level + 1);
+            buf.push('\n');
+            indent(buf, level);
+            buf.push('}');
+        }
+        Expr::Unsafe(u) => {
+            // unsafe { body } → body (drop unsafe, add comment)
+            buf.push_str("// NOTE: was unsafe block\n");
+            indent(buf, level);
+            print_block_body(buf, &u.block, level);
+        }
+        Expr::Group(g) => {
+            print_expr(buf, &g.expr, level);
+        }
+        Expr::Infer(_) => {
+            buf.push('_');
         }
         _ => {
             buf.push_str("_");

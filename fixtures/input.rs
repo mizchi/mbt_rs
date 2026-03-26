@@ -921,6 +921,151 @@ fn is_power_of_two(n: i32) -> bool {
     n > 0 && (n & (n - 1)) == 0
 }
 
+// === Result chaining ===
+
+fn checked_add(a: i32, b: i32, max: i32) -> Result<i32, String> {
+    let sum = a + b;
+    if sum > max {
+        Err("overflow".to_string())
+    } else {
+        Ok(sum)
+    }
+}
+
+fn chain_checked(a: i32, b: i32, c: i32, max: i32) -> Result<i32, String> {
+    match checked_add(a, b, max) {
+        Ok(ab) => checked_add(ab, c, max),
+        Err(e) => Err(e),
+    }
+}
+
+// === Nested Option ===
+
+fn get_nested(arr: Vec<Vec<i32>>, i: usize, j: usize) -> Option<i32> {
+    if i < arr.len() {
+        let inner = &arr[i];
+        if j < inner.len() {
+            Some(inner[j])
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+// === Array of structs ===
+
+fn sum_points_x(points: Vec<Point>) -> i32 {
+    let mut total = 0;
+    for p in points {
+        total = total + p.x;
+    }
+    total
+}
+
+fn find_point_by_x(points: Vec<Point>, target_x: i32) -> Option<Point> {
+    for p in points {
+        if p.x == target_x {
+            return Some(p);
+        }
+    }
+    None
+}
+
+// === Recursive ===
+
+// === Accumulator ===
+
+fn running_sum(arr: Vec<i32>) -> Vec<i32> {
+    let mut result = Vec::new();
+    let mut sum = 0;
+    for x in arr {
+        sum = sum + x;
+        result.push(sum);
+    }
+    result
+}
+
+fn max_in_array(arr: Vec<i32>) -> Option<i32> {
+    if arr.is_empty() {
+        return None;
+    }
+    let mut best = arr[0];
+    let mut i = 1;
+    while i < arr.len() {
+        if arr[i] > best {
+            best = arr[i];
+        }
+        i = i + 1;
+    }
+    Some(best)
+}
+
+fn min_in_array(arr: Vec<i32>) -> Option<i32> {
+    if arr.is_empty() {
+        return None;
+    }
+    let mut best = arr[0];
+    let mut i = 1;
+    while i < arr.len() {
+        if arr[i] < best {
+            best = arr[i];
+        }
+        i = i + 1;
+    }
+    Some(best)
+}
+
+// === State machine ===
+
+fn count_words(s: &str) -> i32 {
+    let mut count = 0;
+    let mut in_word = false;
+    for c in s.chars() {
+        if c == ' ' {
+            in_word = false;
+        } else {
+            if !in_word {
+                count = count + 1;
+                in_word = true;
+            }
+        }
+    }
+    count
+}
+
+// === Range / boundary ===
+
+fn in_range(x: i32, lo: i32, hi: i32) -> bool {
+    x >= lo && x <= hi
+}
+
+fn clamp_to_byte(x: i32) -> i32 {
+    if x < 0 { 0 } else if x > 255 { 255 } else { x }
+}
+
+fn wrap_around(x: i32, max: i32) -> i32 {
+    ((x % max) + max) % max
+}
+
+// === Multi-return patterns ===
+
+fn split_at(arr: Vec<i32>, idx: usize) -> (Vec<i32>, Vec<i32>) {
+    let mut left = Vec::new();
+    let mut right = Vec::new();
+    let mut i = 0;
+    while i < arr.len() {
+        if i < idx {
+            left.push(arr[i]);
+        } else {
+            right.push(arr[i]);
+        }
+        i = i + 1;
+    }
+    (left, right)
+}
+
 fn count_ones(n: i32) -> i32 {
     let mut n = n;
     let mut count = 0;

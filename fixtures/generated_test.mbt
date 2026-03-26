@@ -428,6 +428,52 @@ test "chain_options" {
   assert_eq(chain_options(None, Some(4)), None)
 }
 
+test "chain_checked" {
+  assert_eq(chain_checked(1, 2, 3, 100), Ok(6))
+  assert_true(chain_checked(50, 50, 50, 100) is Err(_))
+}
+
+test "sum_points_x" {
+  let points = [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }]
+  assert_eq(sum_points_x(points), 6)
+}
+
+test "running_sum" {
+  assert_eq(running_sum([1, 2, 3, 4]), [1, 3, 6, 10])
+}
+
+test "max_in_array" {
+  assert_eq(max_in_array([3, 1, 4, 1, 5]), Some(5))
+  assert_eq(max_in_array([]), None)
+}
+
+test "min_in_array" {
+  assert_eq(min_in_array([3, 1, 4, 1, 5]), Some(1))
+  assert_eq(min_in_array([]), None)
+}
+
+test "count_words" {
+  assert_eq(count_words("hello world"), 2)
+  assert_eq(count_words("  hello   world  "), 2)
+  assert_eq(count_words(""), 0)
+}
+
+test "in_range" {
+  assert_eq(in_range(5, 1, 10), true)
+  assert_eq(in_range(0, 1, 10), false)
+}
+
+test "clamp_to_byte" {
+  assert_eq(clamp_to_byte(128), 128)
+  assert_eq(clamp_to_byte(-5), 0)
+  assert_eq(clamp_to_byte(300), 255)
+}
+
+test "wrap_around" {
+  assert_eq(wrap_around(5, 3), 2)
+  assert_eq(wrap_around(-1, 5), 4)
+}
+
 test "is_power_of_two" {
   assert_eq(is_power_of_two(1), true)
   assert_eq(is_power_of_two(8), true)

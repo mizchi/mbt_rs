@@ -77,6 +77,8 @@ mod behavioral_tests {
     #[test] fn test_count_byte() { assert_eq!(count_byte(b"hello", b'l'), 2); }
     #[test] fn test_apply_fn() { assert_eq!(apply_fn(|x| x * 3, 4), 12); }
     #[test] fn test_compose() { assert_eq!(compose(|x| x + 1, |x| x * 2, 5), 11); }
+    #[test] fn test_map_array() { assert_eq!(map_array(vec![1,2,3], |x| x*2), vec![2,4,6]); }
+    #[test] fn test_filter_array() { assert_eq!(filter_array(vec![1,-2,3,-4,5], |x| x>0), vec![1,3,5]); }
     #[test] fn test_fold_array() { assert_eq!(fold_array(vec![1,2,3,4], 0, |a,b| a+b), 10); }
     #[test] fn test_count_char() { assert_eq!(count_char("hello world", 'l'), 3); }
     #[test] fn test_clamp_f64() { assert_eq!(clamp_f64(0.5, 0.0, 1.0), 0.5); }

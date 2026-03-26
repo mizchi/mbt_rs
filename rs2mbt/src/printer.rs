@@ -921,6 +921,28 @@ fn print_block_body(buf: &mut String, block: &Block, level: usize) {
     }
 }
 
+/// Check if an expression is a collection/string constructor.
+/// MoonBit doesn't need `mut` for these since push/pop are methods on the object.
+fn is_collection_init(expr: &Expr) -> bool {
+    match expr {
+        Expr::Call(c) => {
+            let mut path = String::new();
+            print_expr(&mut path, &c.func, 0);
+            matches!(
+                path.as_str(),
+                "Array::new" | "Vec::new" | "String::new" | "HashMap::new"
+                    | "Map::new" | "[]" | "\"\"" | "{}"
+            ) || mapping::lookup_constructor(&path).is_some()
+        }
+        Expr::Array(a) => true,  // vec![...] or [...]
+        Expr::Macro(m) => {
+            let name = m.mac.path.segments.last().map(|s| s.ident.to_string()).unwrap_or_default();
+            name == "vec" || name == "String"
+        }
+        _ => false,
+    }
+}
+
 fn print_local(buf: &mut String, local: &Local, level: usize) {
     let is_mut = match &local.pat {
         Pat::Ident(pi) => pi.mutability.is_some(),
@@ -933,7 +955,18 @@ fn print_local(buf: &mut String, local: &Local, level: usize) {
         }
         _ => false,
     };
-    if is_mut {
+    // MoonBit: Array/String don't need mut for push/pop etc.
+    // Strip mut if init is a collection/string constructor
+    let strip_mut = if is_mut {
+        if let Some(init) = &local.init {
+            is_collection_init(&init.expr)
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+    if is_mut && !strip_mut {
         buf.push_str("let mut ");
     } else {
         buf.push_str("let ");
@@ -1558,34 +1591,75 @@ fn print_pat(buf: &mut String, pat: &Pat, level: usize) {
             buf.push(')');
         }
         Pat::Struct(s) => {
-            buf.push_str("{ ");
-            let mut first = true;
-            for f in &s.fields {
-                if !first {
-                    buf.push_str(", ");
+            // Check if this is an enum struct variant (has a path like Instruction::Store)
+            let has_path = s.path.segments.len() > 0;
+            let is_enum_variant = s.path.segments.len() >= 2
+                || s.path.segments.last().map(|seg| {
+                    seg.ident.to_string().chars().next().map(|c| c.is_uppercase()).unwrap_or(false)
+                }).unwrap_or(false);
+
+            if is_enum_variant && has_path {
+                // Enum struct variant: Instruction::Store { addr, value }
+                // → Store(addr~, value~) or Store(addr=pat, value=pat)
+                print_path(buf, &s.path);
+                buf.push('(');
+                let mut first = true;
+                for f in &s.fields {
+                    if !first {
+                        buf.push_str(", ");
+                    }
+                    first = false;
+                    let member = f.member.to_token_stream().to_string();
+                    let is_pun = if let Pat::Ident(pi) = &*f.pat {
+                        pi.ident == member.as_str()
+                    } else {
+                        false
+                    };
+                    if is_pun {
+                        buf.push_str(&member);
+                        buf.push('~');
+                    } else {
+                        buf.push_str(&member);
+                        buf.push('=');
+                        print_pat(buf, &f.pat, level);
+                    }
                 }
-                first = false;
-                let member = f.member.to_token_stream().to_string();
-                buf.push_str(&member);
-                // Check if pun (field name == pattern ident)
-                let is_pun = if let Pat::Ident(pi) = &*f.pat {
-                    pi.ident == member.as_str()
-                } else {
-                    false
-                };
-                if !is_pun {
-                    buf.push_str(": ");
-                    print_pat(buf, &f.pat, level);
+                if let Some(_) = &s.rest {
+                    if !s.fields.is_empty() {
+                        buf.push_str(", ");
+                    }
+                    buf.push_str("..");
                 }
+                buf.push(')');
+            } else {
+                // Plain struct pattern: { x, y, .. }
+                buf.push_str("{ ");
+                let mut first = true;
+                for f in &s.fields {
+                    if !first {
+                        buf.push_str(", ");
+                    }
+                    first = false;
+                    let member = f.member.to_token_stream().to_string();
+                    buf.push_str(&member);
+                    let is_pun = if let Pat::Ident(pi) = &*f.pat {
+                        pi.ident == member.as_str()
+                    } else {
+                        false
+                    };
+                    if !is_pun {
+                        buf.push_str(": ");
+                        print_pat(buf, &f.pat, level);
+                    }
+                }
+                if let Some(_) = &s.rest {
+                    if !s.fields.is_empty() {
+                        buf.push_str(", ");
+                    }
+                    buf.push_str("..");
+                }
+                buf.push_str(" }");
             }
-            if let Some(rest) = &s.rest {
-                if !s.fields.is_empty() {
-                    buf.push_str(", ");
-                }
-                let _ = rest;
-                buf.push_str("..");
-            }
-            buf.push_str(" }");
         }
         Pat::Lit(l) => print_lit(buf, &l.lit),
         Pat::Type(pt) => {

@@ -360,6 +360,16 @@ test "compose" {
   assert_eq(compose(fn(x) { x + 1 }, fn(x) { x * 2 }, 5), 11)
 }
 
+test "map_array" {
+  let double = fn(x : Int) -> Int { x * 2 }
+  assert_eq(map_array([1, 2, 3], double), [2, 4, 6])
+}
+
+test "filter_array" {
+  let positive = fn(x : Int) -> Bool { x > 0 }
+  assert_eq(filter_array([1, -2, 3, -4, 5], positive), [1, 3, 5])
+}
+
 test "fold_array" {
   let add = fn(a : Int, b : Int) -> Int { a + b }
   assert_eq(fold_array([1, 2, 3, 4], 0, add), 10)

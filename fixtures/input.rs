@@ -781,6 +781,24 @@ fn compose(f: fn(i32) -> i32, g: fn(i32) -> i32, x: i32) -> i32 {
     f(g(x))
 }
 
+fn map_array(arr: Vec<i32>, f: fn(i32) -> i32) -> Vec<i32> {
+    let mut result = Vec::new();
+    for x in arr {
+        result.push(f(x));
+    }
+    result
+}
+
+fn filter_array(arr: Vec<i32>, pred: fn(i32) -> bool) -> Vec<i32> {
+    let mut result = Vec::new();
+    for x in arr {
+        if pred(x) {
+            result.push(x);
+        }
+    }
+    result
+}
+
 fn fold_array(arr: Vec<i32>, init: i32, f: fn(i32, i32) -> i32) -> i32 {
     let mut acc = init;
     for x in arr {

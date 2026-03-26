@@ -8,7 +8,7 @@
 - [x] `String::from("lit")` → `"lit"` コンストラクタ簡略化
 - [x] `Vec::new()` → `[]`, `String::new()` → `""`, `HashMap::new()` → `{}` コンストラクタ変換
 - [x] `cargo expand` 連携 (`just expand-and-convert` / `just expand-and-report`)
-- [ ] 生成 MoonBit コードに `moon fmt` 自動適用 (justfile タスク)
+- [x] 生成 MoonBit コードに `moon fmt` 自動適用 (`just convert <file>`)
 
 ## Medium Priority (中程度の労力)
 
@@ -16,8 +16,8 @@
 - [ ] `#[cfg(test)] mod tests { ... }` → テスト関数の抽出と `test` ブロック変換
 - [ ] `while let Some(x) = iter.next()` → `for x in iter` パターン検出
 - [ ] `trait` + `impl` → MoonBit `impl Trait for Type with method` の精度向上 (self 型解決)
-- [ ] struct variant のパターンマッチ (`Instruction::Store { addr, value }`)
-- [ ] `let mut` の不要な `mut` 検出・除去 (MoonBit は Array.push 等で mut 不要)
+- [x] struct variant のパターンマッチ (`Instr::Store { addr, val }` → `Store(addr~, val~)`)
+- [x] `let mut` の不要な `mut` 検出・除去 (`let mut v = Vec::new()` → `let v = []`)
 - [ ] `Fn`/`FnMut`/`FnOnce` trait bound → MoonBit クロージャ型のコンテキスト判定
 
 ## Low Priority (発展的)

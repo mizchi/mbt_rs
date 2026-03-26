@@ -81,6 +81,21 @@ behavioral-test:
     moon test --target js
     echo "=== Both pass: behavioral equivalence confirmed ==="
 
+# Convert a Rust file and apply moon fmt
+convert file:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    root="{{justfile_directory()}}"
+    cargo build -q --manifest-path "$root/rs2mbt/Cargo.toml"
+    tmpdir=$(mktemp -d)
+    trap 'rm -rf "$tmpdir"' EXIT
+    echo '{"name":"t","version":"0.1.0"}' > "$tmpdir/moon.mod.json"
+    mkdir -p "$tmpdir/src"
+    touch "$tmpdir/src/moon.pkg"
+    "$root/rs2mbt/target/debug/rs2mbt" "{{file}}" > "$tmpdir/src/out.mbt"
+    cd "$tmpdir" && moon fmt 2>/dev/null
+    cat "$tmpdir/src/out.mbt"
+
 # Conversion quality report for a Rust file
 quality-report file:
     #!/usr/bin/env bash

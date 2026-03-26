@@ -141,6 +141,26 @@ mod behavioral_tests {
     #[test] fn test_result_unwrap_or() { assert_eq!(result_unwrap_or(Ok(5)), 5); assert_eq!(result_unwrap_or(Err("x".into())), 0); }
     #[test] fn test_result_is_ok_and() { assert!(result_is_ok_and(Ok(1))); assert!(!result_is_ok_and(Err("x".into()))); }
     #[test] fn test_result_to_option() { assert_eq!(result_to_option(Ok(5)), Some(5)); assert_eq!(result_to_option(Err("x".into())), None); }
+    #[test] fn test_identity() { assert_eq!(identity(42), 42); }
+    #[test] fn test_sum_range() { assert_eq!(sum_range(5), 10); }
+    #[test] fn test_str_len() { assert_eq!(str_len("hello"), 5); }
+    #[test] fn test_trim_len() { assert_eq!(trim_len("  hi  "), 2); }
+    #[test] fn test_is_not_empty() { assert!(is_not_empty(&vec![1])); assert!(!is_not_empty(&vec![])); }
+    #[test] fn test_always_false() { assert!(!always_false()); }
+    #[test] fn test_tree_sum2() { assert_eq!(tree_sum(&leaf(10)), 10); }
+    #[test] fn test_describe_num() { assert_eq!(describe_num(0), "zero"); assert_eq!(describe_num(200), "big"); }
+    #[test] fn test_origin_3d() { assert_eq!(origin_3d().x, 0); }
+    #[test] fn test_offset_coord() { let c = offset_coord(origin_3d(), 1, 2, 3); assert_eq!(c.x, 1); }
+    #[test] fn test_clamp_positive() { assert_eq!(clamp_positive(5), 5); assert_eq!(clamp_positive(-3), 0); }
+    #[test] fn test_abs_val() { assert_eq!(abs_val(5), 5); assert_eq!(abs_val(-3), 3); }
+    #[test] fn test_is_long() { assert!(!is_long("short")); assert!(is_long("this is a long string")); }
+    #[test] fn test_sum_of_squares() { assert_eq!(sum_of_squares(3), 14); }
+    #[test] fn test_checked_add() { assert_eq!(checked_add(1, 2, 100), Ok(3)); assert!(checked_add(50, 60, 100).is_err()); }
+    #[test] fn test_remove_duplicates() { assert_eq!(remove_duplicates(vec![1,2,2,3,1]), vec![1,2,3]); }
+    #[test] fn test_split_at() { assert_eq!(split_at(vec![1,2,3,4], 2), (vec![1,2], vec![3,4])); }
+    #[test] fn test_option_is_some_and() { assert!(option_is_some_and(Some(5))); assert!(!option_is_some_and(None)); }
+    #[test] fn test_result_is_err_and() { assert!(result_is_err_and(Err("x".into()))); assert!(!result_is_err_and(Ok(1))); }
+    #[test] fn test_count_ones() { assert_eq!(count_ones(7), 3); assert_eq!(count_ones(0), 0); }
     #[test] fn test_is_power_of_two() { assert!(is_power_of_two(8)); assert!(!is_power_of_two(6)); }
     #[test] fn test_is_prime() { assert!(is_prime(2)); assert!(is_prime(17)); assert!(!is_prime(4)); assert!(!is_prime(1)); }
     #[test] fn test_make_empty_vec() { assert_eq!(make_empty_vec(), Vec::<i32>::new()); }

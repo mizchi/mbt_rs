@@ -691,6 +691,103 @@ test "result_to_option" {
   assert_eq(result_to_option(Err("x")), None)
 }
 
+test "identity" {
+  assert_eq(identity(42), 42)
+}
+
+test "sum_range" {
+  assert_eq(sum_range(5), 10)
+}
+
+test "str_len" {
+  assert_eq(str_len("hello"), 5)
+}
+
+test "trim_len" {
+  assert_eq(trim_len("  hi  "), 2)
+}
+
+test "is_not_empty" {
+  assert_eq(is_not_empty([1]), true)
+  assert_eq(is_not_empty([]), false)
+}
+
+test "always_false" {
+  assert_eq(always_false(), false)
+}
+
+test "tree_sum" {
+  assert_eq(tree_sum(leaf(10)), 10)
+}
+
+test "describe_num" {
+  assert_eq(describe_num(0), "zero")
+  assert_eq(describe_num(1), "one")
+  assert_eq(describe_num(-5), "negative")
+  assert_eq(describe_num(200), "big")
+  assert_eq(describe_num(50), "other")
+}
+
+test "origin_3d" {
+  let c = origin_3d()
+  assert_eq(c.x, 0)
+}
+
+test "offset_coord" {
+  let c = offset_coord(origin_3d(), 1, 2, 3)
+  assert_eq(c.x, 1)
+  assert_eq(c.y, 2)
+  assert_eq(c.z, 3)
+}
+
+test "clamp_positive" {
+  assert_eq(clamp_positive(5), 5)
+  assert_eq(clamp_positive(-3), 0)
+}
+
+test "abs_val" {
+  assert_eq(abs_val(5), 5)
+  assert_eq(abs_val(-3), 3)
+}
+
+test "is_long" {
+  assert_eq(is_long("short"), false)
+  assert_eq(is_long("this is a long string"), true)
+}
+
+test "sum_of_squares" {
+  assert_eq(sum_of_squares(3), 14)
+}
+
+test "checked_add" {
+  assert_eq(checked_add(1, 2, 100), Ok(3))
+  assert_true(checked_add(50, 60, 100) is Err(_))
+}
+
+test "remove_duplicates" {
+  assert_eq(remove_duplicates([1, 2, 2, 3, 1]), [1, 2, 3])
+}
+
+test "split_at" {
+  assert_eq(split_at([1, 2, 3, 4], 2), ([1, 2], [3, 4]))
+}
+
+test "option_is_some_and" {
+  assert_eq(option_is_some_and(Some(5)), true)
+  assert_eq(option_is_some_and(Some(-3)), false)
+  assert_eq(option_is_some_and(None), false)
+}
+
+test "result_is_err_and" {
+  assert_eq(result_is_err_and(Err("x")), true)
+  assert_eq(result_is_err_and(Ok(1)), false)
+}
+
+test "count_ones" {
+  assert_eq(count_ones(7), 3)
+  assert_eq(count_ones(0), 0)
+}
+
 test "is_power_of_two" {
   assert_eq(is_power_of_two(1), true)
   assert_eq(is_power_of_two(8), true)

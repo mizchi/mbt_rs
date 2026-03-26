@@ -2,7 +2,9 @@
 
 Bidirectional transpiler between MoonBit and Rust.
 
-Focuses on syntax-level conversion with standard library API mapping, ownership/lifetime stripping, Drop→defer conversion, and async syntax support. Does not aim for perfect conversion — converts as much as possible and leaves the rest as WARNING comments for manual fixing.
+**This is not a fully automated transpiler.** It generates a starting point to make porting code between Rust and MoonBit easier. The output will likely require manual adjustments — especially around trait implementations, complex generics, and Rust-specific patterns like ownership. Unconvertible patterns are marked with `// WARNING:` comments explaining what needs to be fixed and how.
+
+Covers: syntax-level conversion, standard library API mapping, ownership/lifetime stripping, Drop→defer conversion, `cargo expand` integration for macro expansion, and async syntax support.
 
 ## Install
 

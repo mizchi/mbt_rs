@@ -130,3 +130,15 @@ ra_ap_project_model = "0.0.325"
 ### 推奨アプローチ
 - 短期: 構文レベルで `impl Drop` を検出し、同一ファイル内の変数作成にコメント付き `defer` を挿入
 - 長期: `ra_ap_hir` 統合で完全な型ベースの Drop → defer 変換
+
+### ra_ap_hir_expand でのマクロ展開 (PoC 成功)
+
+```rust
+// sema.expand_macro_call(&mac) で展開可能
+make_adder!(add_one, 1);  →  fn add_one(x: i32) -> i32 { x + 1 }
+make_adder!(add_ten, 10); →  fn add_ten(x: i32) -> i32 { x + 10 }
+```
+
+**利点**: cargo expand (subprocess) より統合度が高い、proc-macro 不要
+**課題**: ra_ap_* 依存が巨大 (ビルド30秒+)、Cargo プロジェクト構造必要
+**判断**: 現時点では `--expand` (subprocess) が実用的。将来的に統合検討。

@@ -2,44 +2,58 @@
 
 Bidirectional transpiler between MoonBit and Rust.
 
-Focuses on syntax-level conversion with standard library API mapping, ownership/lifetime stripping, and async syntax conversion. Does not aim for perfect conversion — converts as much as possible and leaves the rest as TODO comments for manual fixing.
+Focuses on syntax-level conversion with standard library API mapping, ownership/lifetime stripping, Drop→defer conversion, and async syntax support. Does not aim for perfect conversion — converts as much as possible and leaves the rest as WARNING comments for manual fixing.
 
 ## Install
 
 ```bash
 # rs2mbt (Rust → MoonBit) CLI
-cd rs2mbt && cargo build --release
-# Binary: rs2mbt/target/release/rs2mbt
-```
+cargo install --git https://github.com/mizchi/mbt_rs rs2mbt
 
-mbt2rs (MoonBit → Rust) is available as a MoonBit library.
+# mbt2rs (MoonBit → Rust) library
+moon add mizchi/mbt_rs
+```
 
 ## Usage
 
-### Rust → MoonBit
+### Rust → MoonBit (CLI)
 
 ```bash
-# Single file conversion
+# Single file
 rs2mbt input.rs > output.mbt
 
-# Convert with macro expansion (recommended for real projects)
-just expand-and-convert path/to/rust/crate > output.mbt
+# With macro expansion (recommended for real projects)
+rs2mbt --expand src/lib.rs > output.mbt
 
 # Quality report
 rs2mbt --report input.rs
+
+# Convert + auto format
+just convert input.rs
 ```
 
-### MoonBit → Rust
+### MoonBit → Rust (Library)
+
+```
+// moon.pkg
+import {
+  "mizchi/mbt_rs/mbt2rs",
+  "moonbitlang/parser",
+}
+```
 
 ```moonbit
-let rust_code = @to_rust.to_rust(impls)
+let source = "fn add(x : Int, y : Int) -> Int { x + y }"
+let (impls, _) = @moonbitlang/parser.parse_string(source)
+let rust_code = @mbt2rs.to_rust(impls)
+// → "fn add(x: i32, y: i32) -> i32 {\n    x + y\n}\n"
 ```
 
 ### Quality Report
 
 ```bash
-just quality-report path/to/file.rs
-just quality-report-all
+rs2mbt --report input.rs
+rs2mbt --expand --report src/lib.rs  # with macro expansion
 ```
 
 Results on real projects:
@@ -49,8 +63,9 @@ Results on real projects:
 | calculator.rs | 211 | 100% | Expression tree + eval + simplify |
 | stack.rs | 114 | 100% | Generic stack |
 | quality_test.rs | 181 | 97% | Mixed patterns |
-| linear_map.rs | 606 | 93% | Vec-based map |
-| After `cargo expand` | — | 99% | Macro expansion eliminates most TODOs |
+| linear_map.rs | 606 | 96% | Vec-based map |
+| hex crate | 525 | 96% | Hex encode/decode |
+| After `cargo expand` | — | 99% | Macro expansion eliminates most WARNINGs |
 
 ## Conversion Reference
 
@@ -81,6 +96,9 @@ Results on real projects:
 |------|---------|
 | `fn foo<T>(x: T) -> T` | `fn[T] foo(x: T) -> T` |
 | `impl<T> S<T> { fn m(&self) }` | `fn S::m(self: S[T])` |
+| `trait Foo { fn bar(&self) -> T; }` | `trait Foo { bar(Self) -> T }` |
+| `impl Foo for Bar { fn bar(&self) { } }` | `impl Foo for Bar with bar(self: Bar) { }` |
+| `fn f(x: &dyn Trait)` | `fn[X: Trait] f(x: X)` |
 | `#[derive(Debug, Eq)]` | `} derive(Show, Eq)` |
 | `if let Some(x) = opt` | `if opt is Some(x)` |
 | `expr.await` | `expr` (no await needed) |
@@ -88,17 +106,21 @@ Results on real projects:
 | `format!("{} {}", a, b)` | `"\{a} \{b}"` |
 | `assert_eq!(a, b)` | `assert_eq(a, b)` |
 | `println!("hi")` | `println("hi")` |
+| `matches!(x, Pat)` | `x is Pat` |
 | `String::from("s")` | `"s"` |
 | `Vec::new()` | `[]` |
 | `Box::new(x)` | `x` |
 | `x.clone()` | `x` (GC'd) |
-| `x.borrow()` | `x` (GC'd) |
 | `x.len()` | `x.length()` |
-| `x.to_lowercase()` | `x.to_lower()` |
-| `#[test] fn test_foo()` | `test "foo" { }` |
-| `matches!(x, Pat)` | `x is Pat` |
+| `x.iter().map(f).collect()` | `x.map(f)` |
+| `x.and_then(f)` | `x.bind(f)` |
+| `x as f64` | `x.to_double()` |
 | `!expr` | `not(expr)` |
+| `#[test] fn test_foo()` | `test "foo" { }` |
+| `struct Unit;` | `struct Unit {}` |
+| `let e = Unit;` | `let e = Unit::{ }` |
 | `loop { }` | `while true { }` |
+| `while let Some(x) = v.next()` | `for x in v { }` |
 | `for (a,b) in v` | `for _item in v { let (a,b) = _item }` |
 
 ### Ownership / Lifetimes
@@ -114,8 +136,9 @@ All stripped. MoonBit is garbage-collected.
 | `Cell<T>` / `RefCell<T>` | `T` |
 | `'a` lifetime params | removed |
 | `*expr` (deref) | `expr` |
+| `impl Drop for X { fn drop() { body } }` | `defer { body }` at creation site |
 
-### Iterator Trait Impls
+### Iterator / Collection Trait Impls
 
 | Rust | MoonBit |
 |------|---------|
@@ -125,23 +148,36 @@ All stripped. MoonBit is garbage-collected.
 | `impl Index` | skipped (`op_get` / `op_set`) |
 | `impl Extend` | skipped |
 
-### Unsupported (emits TODO comments)
+### Option / Result
 
-- `macro_rules!` definitions — use `cargo expand` to resolve
+| Rust | MoonBit |
+|------|---------|
+| `.map(f)` | `.map(f)` |
+| `.and_then(f)` | `.bind(f)` |
+| `.unwrap_or(v)` | `.unwrap_or(v)` |
+| `.unwrap_or_else(f)` | `.or_else(f)` |
+| `.flatten()` | `.flatten()` |
+| `.is_some()` / `.is_none()` | same |
+| `.is_ok()` / `.is_err()` | same |
+| `.map_err(f)` | `.map_err(f)` |
+
+### Unsupported (emits WARNING comments)
+
+- `macro_rules!` definitions — use `cargo expand` or `rs2mbt --expand`
 - `unsafe` blocks — stripped with comment
-- `tokio::select!` — no MoonBit equivalent
+- Blanket trait impls (`impl<T> Foo for T`)
 - Complex trait objects / dynamic dispatch
 
 ## Testing
 
 ```bash
-# Run all tests
+# All tests
 just test-all
 
 # Individual suites
 just test            # mbt2rs MoonBit tests (100)
 just cargo-test      # rs2mbt Rust tests (139)
-just behavioral-test # Behavioral equivalence (Rust 72 + MoonBit 74)
+just behavioral-test # Behavioral equivalence (Rust 159 + MoonBit 161)
 ```
 
 The behavioral test runs the same assertions in both Rust (`cargo test`) and MoonBit (`moon test`) to verify that converted code produces identical results.

@@ -143,7 +143,7 @@ pub fn lookup_method(name: &str) -> &str {
 
         // === Option methods ===
         "unwrap" => "unwrap",
-        "unwrap_or" => "or",          // MoonBit: opt.or(default)
+        "unwrap_or" => "unwrap_or",   // MoonBit: opt.unwrap_or(default)
         "unwrap_or_else" => "or_else",
         "unwrap_or_default" => "or_default",
         "is_some" => "is_some",       // MoonBit: opt is Some(_) or method

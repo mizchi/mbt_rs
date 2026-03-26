@@ -1401,6 +1401,33 @@ fn binary_search(arr: &Vec<i32>, target: i32) -> Option<i32> {
     None
 }
 
+// === Previously broken, now fixed ===
+
+fn sum_ref(arr: &Vec<i32>) -> i32 {
+    let mut s = 0;
+    for x in arr {
+        s = s + *x;
+    }
+    s
+}
+
+fn option_unwrap_or_val(x: Option<i32>, default: i32) -> i32 {
+    x.unwrap_or(default)
+}
+
+fn int_to_string(n: i32) -> String {
+    n.to_string()
+}
+
+fn deref_in_loop(arr: &Vec<i32>, target: i32) -> bool {
+    for x in arr {
+        if *x == target {
+            return true;
+        }
+    }
+    false
+}
+
 fn count_ones(n: i32) -> i32 {
     let mut n = n;
     let mut count = 0;

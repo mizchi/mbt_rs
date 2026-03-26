@@ -614,6 +614,24 @@ test "binary_search" {
   assert_eq(binary_search([1, 3, 5, 7, 9], 4), None)
 }
 
+test "sum_ref" {
+  assert_eq(sum_ref([1, 2, 3]), 6)
+}
+
+test "option_unwrap_or_val" {
+  assert_eq(option_unwrap_or_val(Some(5), 0), 5)
+  assert_eq(option_unwrap_or_val(None, 42), 42)
+}
+
+test "int_to_string" {
+  assert_eq(int_to_string(42), "42")
+}
+
+test "deref_in_loop" {
+  assert_eq(deref_in_loop([1, 2, 3], 2), true)
+  assert_eq(deref_in_loop([1, 2, 3], 5), false)
+}
+
 test "is_power_of_two" {
   assert_eq(is_power_of_two(1), true)
   assert_eq(is_power_of_two(8), true)

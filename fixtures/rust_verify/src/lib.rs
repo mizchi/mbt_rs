@@ -126,6 +126,10 @@ mod behavioral_tests {
     #[test] fn test_range_array() { assert_eq!(range_array(1, 5), vec![1,2,3,4]); }
     #[test] fn test_repeat_val() { assert_eq!(repeat_val(7, 3), vec![7,7,7]); }
     #[test] fn test_binary_search() { assert_eq!(binary_search(&vec![1,3,5,7,9], 5), Some(2)); assert_eq!(binary_search(&vec![1,3,5,7,9], 4), None); }
+    #[test] fn test_sum_ref() { assert_eq!(sum_ref(&vec![1,2,3]), 6); }
+    #[test] fn test_option_unwrap_or_val() { assert_eq!(option_unwrap_or_val(Some(5), 0), 5); assert_eq!(option_unwrap_or_val(None, 42), 42); }
+    #[test] fn test_int_to_string() { assert_eq!(int_to_string(42), "42"); }
+    #[test] fn test_deref_in_loop() { assert!(deref_in_loop(&vec![1,2,3], 2)); assert!(!deref_in_loop(&vec![1,2,3], 5)); }
     #[test] fn test_is_power_of_two() { assert!(is_power_of_two(8)); assert!(!is_power_of_two(6)); }
     #[test] fn test_is_prime() { assert!(is_prime(2)); assert!(is_prime(17)); assert!(!is_prime(4)); assert!(!is_prime(1)); }
     #[test] fn test_make_empty_vec() { assert_eq!(make_empty_vec(), Vec::<i32>::new()); }

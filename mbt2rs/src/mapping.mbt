@@ -105,7 +105,7 @@ pub fn rust_lookup_method(method_name : String) -> String {
     "maximum" => "max"
     // === Option ===
     "unwrap" => "unwrap"
-    "or" => "unwrap_or"
+    "unwrap_or" => "unwrap_or"
     "or_else" => "unwrap_or_else"
     "or_default" => "unwrap_or_default"
     "is_some" => "is_some"

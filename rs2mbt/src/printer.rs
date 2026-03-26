@@ -121,8 +121,42 @@ fn print_item(buf: &mut String, item: &Item, level: usize) {
                 }
             }
         }
+        Item::Macro(m) => {
+            // macro_rules! or macro invocation at item level
+            let name = m.mac.path.segments.last().map(|s| s.ident.to_string()).unwrap_or_default();
+            if name == "macro_rules" || m.ident.is_some() {
+                let ident = m.ident.as_ref().map(|i| i.to_string()).unwrap_or_default();
+                buf.push_str(&format!("// WARNING: macro_rules! `{}` cannot be converted.\n", ident));
+                buf.push_str("// Use `cargo expand` to expand macro invocations before converting.\n");
+            } else {
+                // Item-level macro invocation (e.g., impl_iter!{...})
+                buf.push_str(&format!("// WARNING: macro invocation `{}!` not converted.\n", name));
+                buf.push_str("// Expand with `cargo expand` or manually inline the expansion.\n");
+            }
+        }
+        Item::ExternCrate(e) => {
+            buf.push_str(&format!("// NOTE: extern crate `{}` removed (use MoonBit imports instead)\n",
+                e.ident));
+        }
+        Item::ForeignMod(f) => {
+            buf.push_str("// WARNING: extern block (FFI) not converted.\n");
+            buf.push_str("// MoonBit FFI uses different syntax. See MoonBit docs for FFI.\n");
+            for item in &f.items {
+                if let syn::ForeignItem::Fn(ff) = item {
+                    buf.push_str(&format!("// extern fn {}(...)\n", ff.sig.ident));
+                }
+            }
+        }
+        Item::Union(u) => {
+            buf.push_str(&format!("// WARNING: union `{}` not converted (no MoonBit equivalent).\n", u.ident));
+            buf.push_str("// Consider using an enum or struct instead.\n");
+        }
         _ => {
-            buf.push_str("// TODO(transpile): unsupported item\n");
+            // Last resort: output the item as a comment with its tokens
+            let tokens = item.to_token_stream().to_string();
+            let first_line = tokens.lines().next().unwrap_or("");
+            let truncated = if first_line.len() > 80 { &first_line[..80] } else { first_line };
+            buf.push_str(&format!("// WARNING: unsupported item: {}\n", truncated));
         }
     }
 }
@@ -934,7 +968,7 @@ fn is_collection_init(expr: &Expr) -> bool {
                     | "Map::new" | "[]" | "\"\"" | "{}"
             ) || mapping::lookup_constructor(&path).is_some()
         }
-        Expr::Array(a) => true,  // vec![...] or [...]
+        Expr::Array(_) => true,  // vec![...] or [...]
         Expr::Macro(m) => {
             let name = m.mac.path.segments.last().map(|s| s.ident.to_string()).unwrap_or_default();
             name == "vec" || name == "String"
@@ -1392,9 +1426,25 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
         Expr::Infer(_) => {
             buf.push('_');
         }
+        Expr::Yield(y) => {
+            buf.push_str("yield");
+            if let Some(expr) = &y.expr {
+                buf.push(' ');
+                print_expr(buf, expr, level);
+            }
+            buf.push_str(" // WARNING: yield may not work in MoonBit");
+        }
+        Expr::Const(c) => {
+            // const { expr } block
+            print_block_body(buf, &c.block, level);
+        }
         _ => {
-            buf.push_str("_");
-            buf.push_str(" // TODO(transpile): unsupported expr");
+            // Output placeholder with the Rust source as comment
+            let tokens = expr.to_token_stream().to_string();
+            let short = if tokens.len() > 60 { &tokens[..60] } else { &tokens };
+            buf.push_str("_ /* WARNING: unconverted: ");
+            buf.push_str(short);
+            buf.push_str(" */");
         }
     }
 }

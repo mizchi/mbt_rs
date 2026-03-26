@@ -36,9 +36,13 @@ fn print_quality_report(rust_src: &str, mbt_output: &str) {
         .iter()
         .filter(|l| l.contains("NOTE:") || l.contains("// was unsafe"))
         .collect();
+    let warning_lines: Vec<&&str> = mbt_lines
+        .iter()
+        .filter(|l| l.contains("WARNING:"))
+        .collect();
     let unsupported_lines: Vec<&&str> = mbt_lines
         .iter()
-        .filter(|l| l.contains("unsupported"))
+        .filter(|l| l.contains("unsupported") || l.contains("unconverted"))
         .collect();
 
     // Count Rust items
@@ -58,7 +62,7 @@ fn print_quality_report(rust_src: &str, mbt_output: &str) {
         + if mbt_output.starts_with("fn ") || mbt_output.starts_with("pub fn ") || mbt_output.starts_with("async fn ") { 1 } else { 0 };
     let mbt_tests = mbt_output.matches("\ntest ").count();
 
-    let converted = mbt_lines.len() - todo_lines.len() - note_lines.len() - unsupported_lines.len();
+    let converted = mbt_lines.len() - todo_lines.len() - note_lines.len() - warning_lines.len() - unsupported_lines.len();
     let total = mbt_lines.len();
     let pct = if total > 0 {
         (converted as f64 / total as f64 * 100.0) as i32
@@ -85,13 +89,17 @@ fn print_quality_report(rust_src: &str, mbt_output: &str) {
     println!("Conversion:");
     println!("  Converted lines:   {} / {} ({}%)", converted, total, pct);
     println!("  TODO comments:     {}", todo_lines.len());
+    println!("  WARNING comments:  {}", warning_lines.len());
     println!("  NOTE comments:     {}", note_lines.len());
     println!("  Unsupported:       {}", unsupported_lines.len());
     println!();
 
-    if !todo_lines.is_empty() || !unsupported_lines.is_empty() {
-        println!("Manual fixes needed:");
+    if !todo_lines.is_empty() || !warning_lines.is_empty() || !unsupported_lines.is_empty() {
+        println!("Items needing attention:");
         for line in &todo_lines {
+            println!("  TODO: {}", line.trim());
+        }
+        for line in &warning_lines {
             println!("  {}", line.trim());
         }
         for line in &unsupported_lines {

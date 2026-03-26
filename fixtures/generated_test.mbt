@@ -400,6 +400,12 @@ test "product_array" {
   assert_eq(product_array([1, 2, 3, 4]), 24)
 }
 
+test "average" {
+  assert_eq(average([1, 2, 3, 4, 5]), 3.0)
+  assert_eq(average([10]), 10.0)
+  assert_eq(average([]), 0.0)
+}
+
 test "http_status" {
   assert_eq(http_status(200), "OK")
   assert_eq(http_status(404), "Not Found")

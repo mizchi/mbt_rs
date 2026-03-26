@@ -85,6 +85,7 @@ mod behavioral_tests {
     #[test] fn test_lerp() { assert_eq!(lerp(0.0, 10.0, 0.5), 5.0); }
     #[test] fn test_sum_array() { assert_eq!(sum_array(vec![1,2,3,4,5]), 15); }
     #[test] fn test_product_array() { assert_eq!(product_array(vec![1,2,3,4]), 24); }
+    #[test] fn test_average() { assert_eq!(average(vec![1,2,3,4,5]), 3.0); assert_eq!(average(vec![]), 0.0); }
     #[test] fn test_http_status() { assert_eq!(http_status(200), "OK"); assert_eq!(http_status(999), "Unknown"); }
     #[test] fn test_find_index() { assert_eq!(find_index(vec![10,20,30], 20), 1); assert_eq!(find_index(vec![10,20,30], 99), -1); }
     #[test] fn test_all_positive_arr() { assert!(all_positive_arr(vec![1,2,3])); assert!(!all_positive_arr(vec![1,-2,3])); }

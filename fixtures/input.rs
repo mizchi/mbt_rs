@@ -851,6 +851,17 @@ fn product_array(arr: Vec<i32>) -> i32 {
     total
 }
 
+fn average(arr: Vec<i32>) -> f64 {
+    if arr.is_empty() {
+        return 0.0;
+    }
+    let mut total = 0;
+    for x in &arr {
+        total = total + x;
+    }
+    total as f64 / arr.len() as f64
+}
+
 // === Chained if-else ===
 
 fn http_status(code: i32) -> String {

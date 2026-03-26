@@ -1246,29 +1246,54 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
             print_expr(buf, &a.right, level);
         }
         Expr::While(w) => {
-            // while let Some(x) = iter.next() → MoonBit has no while let, desugar to loop+match
+            // while let → detect iterator patterns or fallback to loop+match
             if let Expr::Let(let_expr) = w.cond.as_ref() {
-                buf.push_str("// while let → loop+match\n");
-                indent(buf, level);
-                buf.push_str("while true {\n");
-                indent(buf, level + 1);
-                buf.push_str("match ");
-                print_expr(buf, &let_expr.expr, level + 1);
-                buf.push_str(" {\n");
-                indent(buf, level + 2);
-                print_pat(buf, &let_expr.pat, level);
-                buf.push_str(" => {\n");
-                print_block_body(buf, &w.body, level + 3);
-                buf.push('\n');
-                indent(buf, level + 2);
-                buf.push('}');
-                buf.push('\n');
-                indent(buf, level + 2);
-                buf.push_str("_ => break\n");
-                indent(buf, level + 1);
-                buf.push_str("}\n");
-                indent(buf, level);
-                buf.push('}');
+                // Check if this is `while let Some(x) = iter.next()` → `for x in iter`
+                let is_iter_next = if let Expr::MethodCall(mc) = &*let_expr.expr {
+                    mc.method == "next"
+                } else {
+                    false
+                };
+                if is_iter_next {
+                    if let Expr::MethodCall(mc) = &*let_expr.expr {
+                        // Extract the binding pattern (e.g., Some(x) → x)
+                        buf.push_str("for ");
+                        match &*let_expr.pat {
+                            Pat::TupleStruct(ts) if !ts.elems.is_empty() => {
+                                print_pat(buf, &ts.elems[0], level);
+                            }
+                            _ => print_pat(buf, &let_expr.pat, level),
+                        }
+                        buf.push_str(" in ");
+                        print_expr(buf, &mc.receiver, level);
+                        buf.push_str(" {\n");
+                        print_block_body(buf, &w.body, level + 1);
+                        buf.push('\n');
+                        indent(buf, level);
+                        buf.push('}');
+                    }
+                } else {
+                    // General while let → loop+match
+                    buf.push_str("while true {\n");
+                    indent(buf, level + 1);
+                    buf.push_str("match ");
+                    print_expr(buf, &let_expr.expr, level + 1);
+                    buf.push_str(" {\n");
+                    indent(buf, level + 2);
+                    print_pat(buf, &let_expr.pat, level);
+                    buf.push_str(" => {\n");
+                    print_block_body(buf, &w.body, level + 3);
+                    buf.push('\n');
+                    indent(buf, level + 2);
+                    buf.push('}');
+                    buf.push('\n');
+                    indent(buf, level + 2);
+                    buf.push_str("_ => break\n");
+                    indent(buf, level + 1);
+                    buf.push_str("}\n");
+                    indent(buf, level);
+                    buf.push('}');
+                }
             } else {
                 buf.push_str("while ");
                 print_expr(buf, &w.cond, level);
@@ -1358,11 +1383,55 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
             buf.push('!');
         }
         Expr::Cast(c) => {
-            buf.push('(');
-            print_expr(buf, &c.expr, level);
-            buf.push_str(" : ");
-            print_type(buf, &c.ty);
-            buf.push(')');
+            // x as f64 → x.to_double(), x as i32 → x.to_int(), etc.
+            // But skip if source and target map to same MoonBit type
+            // (e.g., usize as i32 → both are Int, no cast needed)
+            let target_type = {
+                let mut t = String::new();
+                print_type(&mut t, &c.ty);
+                t
+            };
+            // Check if cast is between types that map to the same MoonBit type
+            let is_identity_cast = match &*c.ty {
+                Type::Path(tp) => {
+                    if let Some(seg) = tp.path.segments.last() {
+                        let rust_target = seg.ident.to_string();
+                        // usize/isize/i32 all → Int, so casting between them is identity
+                        matches!(rust_target.as_str(), "i32" | "usize" | "isize")
+                    } else { false }
+                }
+                _ => false,
+            };
+            if is_identity_cast {
+                // Just output the expression, no cast needed
+                print_expr(buf, &c.expr, level);
+            } else {
+            let method = match target_type.as_str() {
+                "Double" => Some("to_double"),
+                "Float" => Some("to_float"),
+                "Int" => Some("to_int"),
+                "Int64" => Some("to_int64"),
+                "UInt" => Some("to_uint"),
+                "UInt64" => Some("to_uint64"),
+                "Byte" => Some("to_byte"),
+                "Char" => Some("to_char"),
+                "String" => Some("to_string"),
+                _ => None,
+            };
+            if let Some(m) = method {
+                print_expr(buf, &c.expr, level);
+                buf.push('.');
+                buf.push_str(m);
+                buf.push_str("()");
+            } else {
+                // Fallback: type constraint
+                buf.push('(');
+                print_expr(buf, &c.expr, level);
+                buf.push_str(" : ");
+                print_type(buf, &c.ty);
+                buf.push(')');
+            }
+            } // close else of is_identity_cast
         }
         Expr::Macro(m) => {
             print_expr_macro(buf, m, level);

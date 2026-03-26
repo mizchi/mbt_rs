@@ -95,7 +95,7 @@ pub fn lookup_method(name: &str) -> &str {
         "lines" => "split",          // approximate
         "repeat" => "to_string", // approximate
         "is_empty" => "is_empty",
-        "push_str" => "push",        // MoonBit: buf.push(s) for StringBuilder
+        "push_str" => "write_string", // MoonBit: StringBuilder.write_string(s)
 
         // === Vec / Array methods ===
         "push" => "push",
@@ -114,9 +114,9 @@ pub fn lookup_method(name: &str) -> &str {
         "extend" => "append",         // approximate
         "drain" => "drain",
         "retain" => "retain",
-        "iter" => "iter",
-        "iter_mut" => "iter",
-        "into_iter" => "iter",
+        "iter" => "",             // MoonBit Array has methods directly, no .iter() needed
+        "iter_mut" => "",
+        "into_iter" => "",
         "map" => "map",
         "filter" => "filter",
         "flat_map" => "flat_map",
@@ -132,7 +132,7 @@ pub fn lookup_method(name: &str) -> &str {
         "skip" => "drop",             // MoonBit Iter: iter.drop(n)
         "take" => "take",
         "flatten" => "flatten",
-        "collect" => "to_array",      // approximate
+        "collect" => "",               // MoonBit: .map()/.filter() already return Array
         "sum" => "fold(init=0, fn(a, b) { a + b })", // approximate
         "min" => "minimum",
         "max" => "maximum",

@@ -387,7 +387,7 @@ fn test_record_update() {
 fn test_cast() {
     assert_rs2mbt(
         "fn to_i64(x: i32) -> i64 { x as i64 }",
-        "fn to_i64(x : Int) -> Int64 {\n  (x : Int64)\n}",
+        "fn to_i64(x : Int) -> Int64 {\n  x.to_int64()\n}",
     );
 }
 
@@ -873,7 +873,7 @@ fn test_matches_macro() {
 fn test_while_let() {
     assert_rs2mbt(
         "fn drain(v: &mut Vec<i32>) { while let Some(x) = v.pop() { println!(\"{}\", x); } }",
-        "fn drain(v : Array[Int]) -> Unit {\n  // while let → loop+match\n  while true {\n    match v.pop() {\n      Some(x) => {\n        println(\"{}\", x)\n      }\n      _ => break\n    }\n  }\n}",
+        "fn drain(v : Array[Int]) -> Unit {\n  while true {\n    match v.pop() {\n      Some(x) => {\n        println(\"{}\", x)\n      }\n      _ => break\n    }\n  }\n}",
     );
 }
 
@@ -889,7 +889,7 @@ fn test_closure_with_return_type() {
 fn test_nested_method_calls() {
     assert_rs2mbt(
         "fn count(v: Vec<i32>) -> usize { v.iter().filter(|x| *x > 0).count() }",
-        "fn count(v : Array[Int]) -> Int {\n  v.iter().filter(fn(x) -> Unit { x > 0 }).length()\n}",
+        "fn count(v : Array[Int]) -> Int {\n  v.filter(fn(x) -> Unit { x > 0 }).length()\n}",
     );
 }
 

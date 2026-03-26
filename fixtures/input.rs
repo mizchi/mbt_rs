@@ -1066,6 +1066,175 @@ fn split_at(arr: Vec<i32>, idx: usize) -> (Vec<i32>, Vec<i32>) {
     (left, right)
 }
 
+// === Zip / combine ===
+
+fn dot_product(a: Vec<i32>, b: Vec<i32>) -> i32 {
+    let mut sum = 0;
+    let mut i = 0;
+    let len = if a.len() < b.len() { a.len() } else { b.len() };
+    while i < len {
+        sum = sum + a[i] * b[i];
+        i = i + 1;
+    }
+    sum
+}
+
+fn pairwise_max(a: Vec<i32>, b: Vec<i32>) -> Vec<i32> {
+    let mut result = Vec::new();
+    let mut i = 0;
+    let len = if a.len() < b.len() { a.len() } else { b.len() };
+    while i < len {
+        if a[i] > b[i] {
+            result.push(a[i]);
+        } else {
+            result.push(b[i]);
+        }
+        i = i + 1;
+    }
+    result
+}
+
+// === Matrix-like ===
+
+fn transpose_2x2(a: i32, b: i32, c: i32, d: i32) -> (i32, i32, i32, i32) {
+    (a, c, b, d)
+}
+
+// === Multiple conditions ===
+
+fn classify_triangle(a: i32, b: i32, c: i32) -> String {
+    if a + b <= c || a + c <= b || b + c <= a {
+        "invalid".to_string()
+    } else if a == b && b == c {
+        "equilateral".to_string()
+    } else if a == b || b == c || a == c {
+        "isosceles".to_string()
+    } else {
+        "scalene".to_string()
+    }
+}
+
+fn fizzbuzz_string(n: i32) -> String {
+    if n % 15 == 0 {
+        "FizzBuzz".to_string()
+    } else if n % 3 == 0 {
+        "Fizz".to_string()
+    } else if n % 5 == 0 {
+        "Buzz".to_string()
+    } else {
+        n.to_string()
+    }
+}
+
+// === Array manipulation ===
+
+fn remove_duplicates(arr: Vec<i32>) -> Vec<i32> {
+    let mut result = Vec::new();
+    for x in arr {
+        let mut found = false;
+        for y in &result {
+            if *y == x {
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            result.push(x);
+        }
+    }
+    result
+}
+
+fn flatten_nested(arr: Vec<Vec<i32>>) -> Vec<i32> {
+    let mut result = Vec::new();
+    for inner in arr {
+        for x in inner {
+            result.push(x);
+        }
+    }
+    result
+}
+
+fn take_n(arr: Vec<i32>, n: usize) -> Vec<i32> {
+    let mut result = Vec::new();
+    let mut i = 0;
+    while i < n && i < arr.len() {
+        result.push(arr[i]);
+        i = i + 1;
+    }
+    result
+}
+
+fn drop_n(arr: Vec<i32>, n: usize) -> Vec<i32> {
+    let mut result = Vec::new();
+    let mut i = n;
+    while i < arr.len() {
+        result.push(arr[i]);
+        i = i + 1;
+    }
+    result
+}
+
+// === String analysis ===
+
+fn is_digit_string(s: &str) -> bool {
+    if s.is_empty() {
+        return false;
+    }
+    for c in s.chars() {
+        if c < '0' || c > '9' {
+            return false;
+        }
+    }
+    true
+}
+
+fn char_at(s: &str, idx: usize) -> Option<char> {
+    let mut i = 0;
+    for c in s.chars() {
+        if i == idx {
+            return Some(c);
+        }
+        i = i + 1;
+    }
+    None
+}
+
+// === Math ===
+
+fn lcm(a: i32, b: i32) -> i32 {
+    if a == 0 || b == 0 {
+        0
+    } else {
+        let g = gcd(a, b);
+        (a / g) * b
+    }
+}
+
+fn collatz_steps(n: i32) -> i32 {
+    let mut n = n;
+    let mut steps = 0;
+    while n != 1 && n > 0 {
+        if n % 2 == 0 {
+            n = n / 2;
+        } else {
+            n = 3 * n + 1;
+        }
+        steps = steps + 1;
+    }
+    steps
+}
+
+fn digit_sum(n: i32) -> i32 {
+    let mut n = if n < 0 { -n } else { n };
+    let mut sum = 0;
+    while n > 0 {
+        sum = sum + n % 10;
+        n = n / 10;
+    }
+    sum
+}
+
 fn count_ones(n: i32) -> i32 {
     let mut n = n;
     let mut count = 0;

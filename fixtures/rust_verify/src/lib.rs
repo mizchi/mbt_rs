@@ -99,6 +99,19 @@ mod behavioral_tests {
     #[test] fn test_in_range() { assert!(in_range(5, 1, 10)); assert!(!in_range(0, 1, 10)); }
     #[test] fn test_clamp_to_byte() { assert_eq!(clamp_to_byte(128), 128); assert_eq!(clamp_to_byte(-5), 0); assert_eq!(clamp_to_byte(300), 255); }
     #[test] fn test_wrap_around() { assert_eq!(wrap_around(5, 3), 2); assert_eq!(wrap_around(-1, 5), 4); }
+    #[test] fn test_dot_product() { assert_eq!(dot_product(vec![1,2,3], vec![4,5,6]), 32); }
+    #[test] fn test_pairwise_max() { assert_eq!(pairwise_max(vec![1,5,3], vec![4,2,6]), vec![4,5,6]); }
+    #[test] fn test_transpose() { assert_eq!(transpose_2x2(1,2,3,4), (1,3,2,4)); }
+    #[test] fn test_classify_triangle() { assert_eq!(classify_triangle(3,3,3), "equilateral"); assert_eq!(classify_triangle(3,4,5), "scalene"); }
+    #[test] fn test_fizzbuzz_string() { assert_eq!(fizzbuzz_string(15), "FizzBuzz"); assert_eq!(fizzbuzz_string(7), "7"); }
+    #[test] fn test_flatten_nested() { assert_eq!(flatten_nested(vec![vec![1,2],vec![3,4],vec![5]]), vec![1,2,3,4,5]); }
+    #[test] fn test_take_n() { assert_eq!(take_n(vec![1,2,3,4,5], 3), vec![1,2,3]); }
+    #[test] fn test_drop_n() { assert_eq!(drop_n(vec![1,2,3,4,5], 2), vec![3,4,5]); }
+    #[test] fn test_is_digit_string() { assert!(is_digit_string("123")); assert!(!is_digit_string("12a")); }
+    #[test] fn test_char_at() { assert_eq!(char_at("hello", 1), Some('e')); assert_eq!(char_at("hello", 10), None); }
+    #[test] fn test_lcm() { assert_eq!(lcm(4, 6), 12); }
+    #[test] fn test_collatz_steps() { assert_eq!(collatz_steps(1), 0); assert_eq!(collatz_steps(6), 8); }
+    #[test] fn test_digit_sum() { assert_eq!(digit_sum(123), 6); assert_eq!(digit_sum(0), 0); }
     #[test] fn test_is_power_of_two() { assert!(is_power_of_two(8)); assert!(!is_power_of_two(6)); }
     #[test] fn test_is_prime() { assert!(is_prime(2)); assert!(is_prime(17)); assert!(!is_prime(4)); assert!(!is_prime(1)); }
     #[test] fn test_make_empty_vec() { assert_eq!(make_empty_vec(), Vec::<i32>::new()); }

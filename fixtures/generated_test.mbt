@@ -474,6 +474,72 @@ test "wrap_around" {
   assert_eq(wrap_around(-1, 5), 4)
 }
 
+test "dot_product" {
+  assert_eq(dot_product([1, 2, 3], [4, 5, 6]), 32)
+}
+
+test "pairwise_max" {
+  assert_eq(pairwise_max([1, 5, 3], [4, 2, 6]), [4, 5, 6])
+}
+
+test "transpose_2x2" {
+  assert_eq(transpose_2x2(1, 2, 3, 4), (1, 3, 2, 4))
+}
+
+test "classify_triangle" {
+  assert_eq(classify_triangle(3, 3, 3), "equilateral")
+  assert_eq(classify_triangle(3, 3, 5), "isosceles")
+  assert_eq(classify_triangle(3, 4, 5), "scalene")
+  assert_eq(classify_triangle(1, 2, 10), "invalid")
+}
+
+test "fizzbuzz_string" {
+  assert_eq(fizzbuzz_string(15), "FizzBuzz")
+  assert_eq(fizzbuzz_string(3), "Fizz")
+  assert_eq(fizzbuzz_string(5), "Buzz")
+  assert_eq(fizzbuzz_string(7), "7")
+}
+
+test "flatten_nested" {
+  assert_eq(flatten_nested([[1, 2], [3, 4], [5]]), [1, 2, 3, 4, 5])
+}
+
+test "take_n" {
+  assert_eq(take_n([1, 2, 3, 4, 5], 3), [1, 2, 3])
+  assert_eq(take_n([1, 2], 5), [1, 2])
+}
+
+test "drop_n" {
+  assert_eq(drop_n([1, 2, 3, 4, 5], 2), [3, 4, 5])
+}
+
+test "is_digit_string" {
+  assert_eq(is_digit_string("123"), true)
+  assert_eq(is_digit_string("12a"), false)
+  assert_eq(is_digit_string(""), false)
+}
+
+test "char_at" {
+  assert_eq(char_at("hello", 1), Some('e'))
+  assert_eq(char_at("hello", 10), None)
+}
+
+test "lcm" {
+  assert_eq(lcm(4, 6), 12)
+  assert_eq(lcm(0, 5), 0)
+}
+
+test "collatz_steps" {
+  assert_eq(collatz_steps(1), 0)
+  assert_eq(collatz_steps(6), 8)
+}
+
+test "digit_sum" {
+  assert_eq(digit_sum(123), 6)
+  assert_eq(digit_sum(0), 0)
+  assert_eq(digit_sum(-42), 6)
+}
+
 test "is_power_of_two" {
   assert_eq(is_power_of_two(1), true)
   assert_eq(is_power_of_two(8), true)

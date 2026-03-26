@@ -1,11 +1,22 @@
 use std::io::Read;
+use std::path::Path;
+use std::process::Command;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let report_mode = args.iter().any(|a| a == "--report");
+    let expand_mode = args.iter().any(|a| a == "--expand");
     let file_arg = args.iter().skip(1).find(|a| !a.starts_with('-'));
 
-    let input = if let Some(path) = file_arg {
+    let input = if expand_mode {
+        // --expand: find Cargo.toml and run cargo expand
+        if let Some(path) = file_arg {
+            expand_cargo_project(path)
+        } else {
+            eprintln!("--expand requires a file path within a Cargo project");
+            std::process::exit(1);
+        }
+    } else if let Some(path) = file_arg {
         std::fs::read_to_string(path).expect("Failed to read input file")
     } else {
         let mut buf = String::new();
@@ -21,6 +32,70 @@ fn main() {
         print_quality_report(&input, &output);
     } else {
         print!("{}", output);
+    }
+}
+
+/// Find Cargo.toml parent and run `cargo expand`
+fn expand_cargo_project(file_path: &str) -> String {
+    let path = Path::new(file_path).canonicalize().unwrap_or_else(|_| Path::new(file_path).to_path_buf());
+
+    // Walk up to find Cargo.toml
+    let mut dir = path.parent();
+    let cargo_dir = loop {
+        match dir {
+            Some(d) => {
+                if d.join("Cargo.toml").exists() {
+                    break d.to_path_buf();
+                }
+                dir = d.parent();
+            }
+            None => {
+                eprintln!("No Cargo.toml found. Falling back to direct file read.");
+                return std::fs::read_to_string(file_path).expect("Failed to read file");
+            }
+        }
+    };
+
+    eprintln!("Found Cargo.toml at: {}", cargo_dir.display());
+    eprintln!("Running cargo expand...");
+
+    let output = Command::new("cargo")
+        .args(["expand", "--lib"])
+        .current_dir(&cargo_dir)
+        .output();
+
+    match output {
+        Ok(o) if o.status.success() => {
+            let expanded = String::from_utf8_lossy(&o.stdout).to_string();
+            eprintln!("Expanded: {} lines", expanded.lines().count());
+            expanded
+        }
+        Ok(o) => {
+            let stderr = String::from_utf8_lossy(&o.stderr);
+            // Try without --lib
+            let output2 = Command::new("cargo")
+                .arg("expand")
+                .current_dir(&cargo_dir)
+                .output();
+            match output2 {
+                Ok(o2) if o2.status.success() => {
+                    let expanded = String::from_utf8_lossy(&o2.stdout).to_string();
+                    eprintln!("Expanded: {} lines", expanded.lines().count());
+                    expanded
+                }
+                _ => {
+                    eprintln!("cargo expand failed: {}", stderr);
+                    eprintln!("Falling back to direct file read.");
+                    std::fs::read_to_string(file_path).expect("Failed to read file")
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!("Failed to run cargo expand: {}", e);
+            eprintln!("Install with: cargo install cargo-expand");
+            eprintln!("Falling back to direct file read.");
+            std::fs::read_to_string(file_path).expect("Failed to read file")
+        }
     }
 }
 
@@ -45,7 +120,6 @@ fn print_quality_report(rust_src: &str, mbt_output: &str) {
         .filter(|l| l.contains("unsupported") || l.contains("unconverted"))
         .collect();
 
-    // Count Rust items
     let rust_fns = rust_src.matches("\nfn ").count() + if rust_src.starts_with("fn ") { 1 } else { 0 };
     let rust_structs = rust_src.matches("\nstruct ").count()
         + rust_src.matches("\npub struct ").count();
@@ -55,7 +129,6 @@ fn print_quality_report(rust_src: &str, mbt_output: &str) {
     let rust_traits = rust_src.matches("\ntrait ").count();
     let rust_tests = rust_src.matches("#[test]").count();
 
-    // Count MoonBit items
     let mbt_fns = mbt_output.matches("\nfn ").count()
         + mbt_output.matches("\npub fn ").count()
         + mbt_output.matches("\nasync fn ").count()
@@ -108,7 +181,6 @@ fn print_quality_report(rust_src: &str, mbt_output: &str) {
         println!();
     }
 
-    // Output the converted code
     println!("--- Generated MoonBit ---");
     print!("{}", mbt_output);
 }

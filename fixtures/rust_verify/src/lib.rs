@@ -75,6 +75,20 @@ mod behavioral_tests {
     #[test] fn test_is_even() { assert!(is_even(4)); assert!(!is_even(7)); }
     #[test] fn test_bytes_length() { assert_eq!(bytes_length(b"hello"), 5); }
     #[test] fn test_count_byte() { assert_eq!(count_byte(b"hello", b'l'), 2); }
+    #[test] fn test_apply_fn() { assert_eq!(apply_fn(|x| x * 3, 4), 12); }
+    #[test] fn test_compose() { assert_eq!(compose(|x| x + 1, |x| x * 2, 5), 11); }
+    #[test] fn test_fold_array() { assert_eq!(fold_array(vec![1,2,3,4], 0, |a,b| a+b), 10); }
+    #[test] fn test_count_char() { assert_eq!(count_char("hello world", 'l'), 3); }
+    #[test] fn test_clamp_f64() { assert_eq!(clamp_f64(0.5, 0.0, 1.0), 0.5); }
+    #[test] fn test_lerp() { assert_eq!(lerp(0.0, 10.0, 0.5), 5.0); }
+    #[test] fn test_sum_array() { assert_eq!(sum_array(vec![1,2,3,4,5]), 15); }
+    #[test] fn test_product_array() { assert_eq!(product_array(vec![1,2,3,4]), 24); }
+    #[test] fn test_http_status() { assert_eq!(http_status(200), "OK"); assert_eq!(http_status(999), "Unknown"); }
+    #[test] fn test_find_index() { assert_eq!(find_index(vec![10,20,30], 20), 1); assert_eq!(find_index(vec![10,20,30], 99), -1); }
+    #[test] fn test_all_positive_arr() { assert!(all_positive_arr(vec![1,2,3])); assert!(!all_positive_arr(vec![1,-2,3])); }
+    #[test] fn test_double_if_positive() { assert_eq!(double_if_positive(5), Some(10)); assert_eq!(double_if_positive(-3), None); }
+    #[test] fn test_chain_options() { assert_eq!(chain_options(Some(3), Some(4)), Some(7)); assert_eq!(chain_options(None, Some(4)), None); }
+    #[test] fn test_is_power_of_two() { assert!(is_power_of_two(8)); assert!(!is_power_of_two(6)); }
     #[test] fn test_is_prime() { assert!(is_prime(2)); assert!(is_prime(17)); assert!(!is_prime(4)); assert!(!is_prime(1)); }
     #[test] fn test_make_empty_vec() { assert_eq!(make_empty_vec(), Vec::<i32>::new()); }
     #[test] fn test_option_unwrap_or() { assert_eq!(option_unwrap_or(Some(5)), 5); assert_eq!(option_unwrap_or(None), 0); }

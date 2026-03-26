@@ -770,3 +770,145 @@ fn is_prime(n: i32) -> bool {
     }
     true
 }
+
+// === Higher-order functions ===
+
+fn apply_fn(f: fn(i32) -> i32, x: i32) -> i32 {
+    f(x)
+}
+
+fn compose(f: fn(i32) -> i32, g: fn(i32) -> i32, x: i32) -> i32 {
+    f(g(x))
+}
+
+fn fold_array(arr: Vec<i32>, init: i32, f: fn(i32, i32) -> i32) -> i32 {
+    let mut acc = init;
+    for x in arr {
+        acc = f(acc, x);
+    }
+    acc
+}
+
+// === String operations ===
+
+fn count_char(s: &str, target: char) -> i32 {
+    let mut count = 0;
+    for c in s.chars() {
+        if c == target {
+            count = count + 1;
+        }
+    }
+    count
+}
+
+// === Numeric operations ===
+
+fn clamp_f64(x: f64, lo: f64, hi: f64) -> f64 {
+    if x < lo {
+        lo
+    } else if x > hi {
+        hi
+    } else {
+        x
+    }
+}
+
+fn lerp(a: f64, b: f64, t: f64) -> f64 {
+    a + (b - a) * t
+}
+
+fn sum_array(arr: Vec<i32>) -> i32 {
+    let mut total = 0;
+    for x in arr {
+        total = total + x;
+    }
+    total
+}
+
+fn product_array(arr: Vec<i32>) -> i32 {
+    let mut total = 1;
+    for x in arr {
+        total = total * x;
+    }
+    total
+}
+
+// === Chained if-else ===
+
+fn http_status(code: i32) -> String {
+    if code == 200 {
+        "OK".to_string()
+    } else if code == 404 {
+        "Not Found".to_string()
+    } else if code == 500 {
+        "Internal Server Error".to_string()
+    } else if code == 301 {
+        "Moved Permanently".to_string()
+    } else {
+        "Unknown".to_string()
+    }
+}
+
+// === Early return patterns ===
+
+fn find_index(arr: Vec<i32>, target: i32) -> i32 {
+    let mut i = 0;
+    while i < arr.len() {
+        if arr[i] == target {
+            return i as i32;
+        }
+        i = i + 1;
+    }
+    -1
+}
+
+fn all_positive_arr(arr: Vec<i32>) -> bool {
+    for x in arr {
+        if x <= 0 {
+            return false;
+        }
+    }
+    true
+}
+
+// === Nested struct access ===
+
+fn person_city_length(p: &Person) -> i32 {
+    p.address.city.len() as i32
+}
+
+// === Option chaining ===
+
+fn double_if_positive(x: i32) -> Option<i32> {
+    if x > 0 {
+        Some(x * 2)
+    } else {
+        None
+    }
+}
+
+fn chain_options(a: Option<i32>, b: Option<i32>) -> Option<i32> {
+    match a {
+        Some(va) => match b {
+            Some(vb) => Some(va + vb),
+            None => None,
+        },
+        None => None,
+    }
+}
+
+// === Bit operations ===
+
+fn is_power_of_two(n: i32) -> bool {
+    n > 0 && (n & (n - 1)) == 0
+}
+
+fn count_ones(n: i32) -> i32 {
+    let mut n = n;
+    let mut count = 0;
+    while n > 0 {
+        count = count + (n & 1);
+        n = n >> 1;
+    }
+    count
+}

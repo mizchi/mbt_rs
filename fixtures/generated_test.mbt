@@ -351,3 +351,75 @@ test "is_prime" {
   assert_eq(is_prime(4), false)
   assert_eq(is_prime(1), false)
 }
+
+test "apply_fn" {
+  assert_eq(apply_fn(fn(x) { x * 3 }, 4), 12)
+}
+
+test "compose" {
+  assert_eq(compose(fn(x) { x + 1 }, fn(x) { x * 2 }, 5), 11)
+}
+
+test "fold_array" {
+  let add = fn(a : Int, b : Int) -> Int { a + b }
+  assert_eq(fold_array([1, 2, 3, 4], 0, add), 10)
+}
+
+test "count_char" {
+  assert_eq(count_char("hello world", 'l'), 3)
+}
+
+test "clamp_f64" {
+  assert_eq(clamp_f64(0.5, 0.0, 1.0), 0.5)
+  assert_eq(clamp_f64(-1.0, 0.0, 1.0), 0.0)
+  assert_eq(clamp_f64(2.0, 0.0, 1.0), 1.0)
+}
+
+test "lerp" {
+  assert_eq(lerp(0.0, 10.0, 0.5), 5.0)
+  assert_eq(lerp(0.0, 10.0, 0.0), 0.0)
+  assert_eq(lerp(0.0, 10.0, 1.0), 10.0)
+}
+
+test "sum_array" {
+  assert_eq(sum_array([1, 2, 3, 4, 5]), 15)
+  assert_eq(sum_array([]), 0)
+}
+
+test "product_array" {
+  assert_eq(product_array([1, 2, 3, 4]), 24)
+}
+
+test "http_status" {
+  assert_eq(http_status(200), "OK")
+  assert_eq(http_status(404), "Not Found")
+  assert_eq(http_status(999), "Unknown")
+}
+
+test "find_index" {
+  assert_eq(find_index([10, 20, 30], 20), 1)
+  assert_eq(find_index([10, 20, 30], 99), -1)
+}
+
+test "all_positive_arr" {
+  assert_eq(all_positive_arr([1, 2, 3]), true)
+  assert_eq(all_positive_arr([1, -2, 3]), false)
+  assert_eq(all_positive_arr([]), true)
+}
+
+test "double_if_positive" {
+  assert_eq(double_if_positive(5), Some(10))
+  assert_eq(double_if_positive(-3), None)
+}
+
+test "chain_options" {
+  assert_eq(chain_options(Some(3), Some(4)), Some(7))
+  assert_eq(chain_options(Some(3), None), None)
+  assert_eq(chain_options(None, Some(4)), None)
+}
+
+test "is_power_of_two" {
+  assert_eq(is_power_of_two(1), true)
+  assert_eq(is_power_of_two(8), true)
+  assert_eq(is_power_of_two(6), false)
+}

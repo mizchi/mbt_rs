@@ -51,12 +51,65 @@ fn get_self_type_full() -> String {
     })
 }
 
+thread_local! {
+    /// Types that implement Drop (detected in the same file).
+    /// Maps type name → drop body as MoonBit code.
+    static DROP_TYPES: RefCell<std::collections::HashMap<String, String>> =
+        RefCell::new(std::collections::HashMap::new());
+}
+
+fn record_drop_type(type_name: &str, body: &str) {
+    DROP_TYPES.with(|m| {
+        m.borrow_mut().insert(type_name.to_string(), body.to_string());
+    });
+}
+
+fn get_drop_body(type_name: &str) -> Option<String> {
+    DROP_TYPES.with(|m| m.borrow().get(type_name).cloned())
+}
+
+fn clear_drop_types() {
+    DROP_TYPES.with(|m| m.borrow_mut().clear());
+}
+
+/// Pre-scan file for `impl Drop for X` and record the type names + drop bodies.
+fn collect_drop_impls(file: &syn::File) {
+    for item in &file.items {
+        if let Item::Impl(i) = item {
+            if let Some((_, path, _)) = &i.trait_ {
+                let trait_name = path.segments.last().map(|s| s.ident.to_string()).unwrap_or_default();
+                if trait_name == "Drop" {
+                    if let Type::Path(tp) = i.self_ty.as_ref() {
+                        if let Some(seg) = tp.path.segments.last() {
+                            let type_name = seg.ident.to_string();
+                            // Extract drop body
+                            for item in &i.items {
+                                if let ImplItem::Fn(method) = item {
+                                    if method.sig.ident == "drop" {
+                                        let mut body_buf = String::new();
+                                        print_block_body(&mut body_buf, &method.block, 0);
+                                        record_drop_type(&type_name, body_buf.trim());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// Convert Rust source code to MoonBit source code.
 pub fn to_moonbit(rust_src: &str) -> String {
     // Clear any leftover state
     let _ = take_wrapper_types();
+    clear_drop_types();
 
     let file = syn::parse_file(rust_src).expect("Failed to parse Rust source");
+
+    // Pre-scan for Drop impls
+    collect_drop_impls(&file);
     let mut body = String::new();
     for item in &file.items {
         print_item(&mut body, item, 0);
@@ -937,6 +990,12 @@ fn print_block_body(buf: &mut String, block: &Block, level: usize) {
         match stmt {
             Stmt::Local(local) => {
                 print_local(buf, local, level);
+                // Check if this let binding creates a Drop type → insert defer
+                if let Some(defer_code) = check_drop_defer(local) {
+                    buf.push('\n');
+                    indent(buf, level);
+                    buf.push_str(&defer_code);
+                }
             }
             Stmt::Expr(expr, semi) => {
                 print_expr(buf, expr, level);
@@ -952,6 +1011,59 @@ fn print_block_body(buf: &mut String, block: &Block, level: usize) {
         if !is_last {
             buf.push('\n');
         }
+    }
+}
+
+/// Check if a let binding creates a value of a type that implements Drop.
+/// If so, return a `defer { ... }` statement to insert.
+fn check_drop_defer(local: &Local) -> Option<String> {
+    // Get the variable name
+    let var_name = match &local.pat {
+        Pat::Ident(pi) => pi.ident.to_string(),
+        Pat::Type(pt) => {
+            if let Pat::Ident(pi) = pt.pat.as_ref() {
+                pi.ident.to_string()
+            } else {
+                return None;
+            }
+        }
+        _ => return None,
+    };
+
+    // Get the type name from the initializer expression
+    let init = local.init.as_ref()?;
+    let type_name = extract_constructor_type(&init.expr)?;
+
+    // Check if this type has a Drop impl
+    let drop_body = get_drop_body(&type_name)?;
+
+    // Generate defer statement
+    // Replace `self.xxx` with `var_name.xxx` in the drop body
+    let defer_body = drop_body.replace("self.", &format!("{}.", var_name));
+    Some(format!("defer {{ {} }} // Drop impl for {}", defer_body, type_name))
+}
+
+/// Extract the type name from a constructor expression.
+/// e.g., `Guard { ... }` → Some("Guard"), `Guard::new()` → Some("Guard")
+fn extract_constructor_type(expr: &Expr) -> Option<String> {
+    match expr {
+        Expr::Struct(s) => {
+            s.path.segments.last().map(|seg| seg.ident.to_string())
+        }
+        Expr::Call(c) => {
+            // Check for Type::new() pattern
+            if let Expr::Path(p) = c.func.as_ref() {
+                let segments: Vec<_> = p.path.segments.iter().collect();
+                if segments.len() >= 2 {
+                    let method = segments.last()?.ident.to_string();
+                    if method == "new" || method == "open" || method == "create" {
+                        return Some(segments[segments.len() - 2].ident.to_string());
+                    }
+                }
+            }
+            None
+        }
+        _ => None,
     }
 }
 

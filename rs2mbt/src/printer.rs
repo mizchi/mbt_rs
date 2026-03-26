@@ -72,6 +72,28 @@ fn clear_drop_types() {
     DROP_TYPES.with(|m| m.borrow_mut().clear());
 }
 
+thread_local! {
+    static UNIT_STRUCTS: RefCell<std::collections::HashSet<String>> =
+        RefCell::new(std::collections::HashSet::new());
+}
+
+fn collect_unit_structs(file: &syn::File) {
+    UNIT_STRUCTS.with(|set| {
+        set.borrow_mut().clear();
+        for item in &file.items {
+            if let Item::Struct(s) = item {
+                if matches!(s.fields, Fields::Unit) {
+                    set.borrow_mut().insert(s.ident.to_string());
+                }
+            }
+        }
+    });
+}
+
+fn is_unit_struct(name: &str) -> bool {
+    UNIT_STRUCTS.with(|set| set.borrow().contains(name))
+}
+
 /// Pre-scan file for `impl Drop for X` and record the type names + drop bodies.
 fn collect_drop_impls(file: &syn::File) {
     for item in &file.items {
@@ -110,6 +132,9 @@ pub fn to_moonbit(rust_src: &str) -> String {
 
     // Pre-scan for Drop impls
     collect_drop_impls(&file);
+
+    // Pre-scan for unit structs
+    collect_unit_structs(&file);
     let mut body = String::new();
     for item in &file.items {
         print_item(&mut body, item, 0);
@@ -239,6 +264,49 @@ fn print_visibility(buf: &mut String, vis: &Visibility) {
     }
 }
 
+/// Extract trait names from dyn Trait / impl Trait / &dyn Trait parameters.
+/// Returns vec of (param_name, trait_name) pairs for generating generic type params.
+fn extract_trait_params(inputs: &punctuated::Punctuated<FnArg, token::Comma>) -> Vec<(String, String)> {
+    let mut result = Vec::new();
+    let mut counter = 0;
+    for arg in inputs {
+        if let FnArg::Typed(pat_type) = arg {
+            let trait_name = extract_trait_from_type(&pat_type.ty);
+            if let Some(tn) = trait_name {
+                let param_name = if let Pat::Ident(pi) = pat_type.pat.as_ref() {
+                    pi.ident.to_string().to_uppercase()
+                } else {
+                    counter += 1;
+                    format!("T{}", counter)
+                };
+                result.push((param_name, tn));
+            }
+        }
+    }
+    result
+}
+
+fn extract_trait_from_type(ty: &Type) -> Option<String> {
+    match ty {
+        Type::TraitObject(t) => {
+            if let Some(TypeParamBound::Trait(tb)) = t.bounds.first() {
+                let mut name = String::new();
+                print_path(&mut name, &tb.path);
+                Some(name)
+            } else { None }
+        }
+        Type::ImplTrait(t) => {
+            if let Some(TypeParamBound::Trait(tb)) = t.bounds.first() {
+                let mut name = String::new();
+                print_path(&mut name, &tb.path);
+                Some(name)
+            } else { None }
+        }
+        Type::Reference(r) => extract_trait_from_type(&r.elem),
+        _ => None,
+    }
+}
+
 fn print_fn(buf: &mut String, f: &ItemFn, level: usize) {
     // Extract where clause fn types for parameter resolution
     set_where_fn_types(extract_where_fn_types(&f.sig.generics));
@@ -248,11 +316,86 @@ fn print_fn(buf: &mut String, f: &ItemFn, level: usize) {
         buf.push_str("async ");
     }
     buf.push_str("fn");
-    print_generics(buf, &f.sig.generics);
+
+    // Collect extra generics from dyn Trait / impl Trait params
+    let trait_params = extract_trait_params(&f.sig.inputs);
+
+    // Print existing generics + trait params
+    let existing_type_params: Vec<_> = f.sig.generics.params.iter()
+        .filter(|p| !matches!(p, GenericParam::Lifetime(_)))
+        .collect();
+    if !existing_type_params.is_empty() || !trait_params.is_empty() {
+        buf.push('[');
+        let mut first = true;
+        // Existing generics
+        for param in &existing_type_params {
+            if !first { buf.push_str(", "); }
+            first = false;
+            match param {
+                GenericParam::Type(t) => {
+                    buf.push_str(&t.ident.to_string());
+                    let trait_bounds: Vec<_> = t.bounds.iter()
+                        .filter_map(|b| if let TypeParamBound::Trait(tb) = b {
+                            if !matches!(tb.modifier, TraitBoundModifier::Maybe(_)) { Some(tb) } else { None }
+                        } else { None })
+                        .collect();
+                    if !trait_bounds.is_empty() {
+                        buf.push_str(" : ");
+                        let mut first_b = true;
+                        for tb in trait_bounds {
+                            if !first_b { buf.push_str(" + "); }
+                            first_b = false;
+                            print_path(buf, &tb.path);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        // Extra trait params from dyn/impl Trait
+        for (name, trait_name) in &trait_params {
+            if !first { buf.push_str(", "); }
+            first = false;
+            buf.push_str(name);
+            buf.push_str(" : ");
+            buf.push_str(trait_name);
+        }
+        buf.push(']');
+    }
+
     buf.push(' ');
     buf.push_str(&f.sig.ident.to_string());
     buf.push('(');
-    print_fn_params(buf, &f.sig.inputs);
+    // Print params, replacing dyn Trait types with the generated type param names
+    {
+        let mut trait_idx = 0;
+        let mut first = true;
+        for arg in &f.sig.inputs {
+            if !first { buf.push_str(", "); }
+            first = false;
+            match arg {
+                FnArg::Receiver(_) => {
+                    let self_ty = get_self_type_full();
+                    if !self_ty.is_empty() {
+                        buf.push_str("self : ");
+                        buf.push_str(&self_ty);
+                    } else {
+                        buf.push_str("self");
+                    }
+                }
+                FnArg::Typed(pat_type) => {
+                    print_pat(buf, &pat_type.pat, 0);
+                    buf.push_str(" : ");
+                    if extract_trait_from_type(&pat_type.ty).is_some() && trait_idx < trait_params.len() {
+                        buf.push_str(&trait_params[trait_idx].0);
+                        trait_idx += 1;
+                    } else {
+                        print_type(buf, &pat_type.ty);
+                    }
+                }
+            }
+        }
+    }
     buf.push(')');
     print_return_type(buf, &f.sig.output);
     buf.push_str(" {\n");
@@ -1164,7 +1307,17 @@ fn print_local(buf: &mut String, local: &Local, level: usize) {
 fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
     match expr {
         Expr::Lit(lit) => print_lit(buf, &lit.lit),
-        Expr::Path(p) => print_path(buf, &p.path),
+        Expr::Path(p) => {
+            // Check if this is a unit struct constructor
+            if let Some(seg) = p.path.segments.last() {
+                if is_unit_struct(&seg.ident.to_string()) {
+                    print_path(buf, &p.path);
+                    buf.push_str("::{ }");
+                    return;
+                }
+            }
+            print_path(buf, &p.path);
+        }
         Expr::Unary(u) => {
             match u.op {
                 UnOp::Neg(_) => buf.push('-'),

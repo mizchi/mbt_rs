@@ -102,3 +102,31 @@ fn count_digits(mut n: i32) -> i32 { while n > 0 { n = n / 10; } }
 - 型推論は行わない (syn はパースのみ)
 - `dyn Trait` → trait 名のみ
 - Rust の `impl` ブロック内ジェネリクス制約は部分的にのみ伝播
+
+## rust-analyzer Integration (調査結果)
+
+`ra_ap_*` crates (v0.0.325) で型推論情報を取得可能。
+
+```toml
+[dependencies]
+ra_ap_ide = "0.0.325"
+ra_ap_hir = "0.0.325"
+ra_ap_syntax = "0.0.325"
+ra_ap_load-cargo = "0.0.325"
+ra_ap_project_model = "0.0.325"
+```
+
+### 確認済み
+- `load_workspace_at()` で Cargo プロジェクトを読み込み可能
+- `Semantics::parse()` でファイルのセマンティクス付きパース
+- `Semantics::type_of_expr()` で式の推論型を取得（API 存在、実行は DB attach 問題あり）
+- `ra_ap_syntax` で `impl Drop for X` の検出は構文レベルで可能
+
+### Drop → defer 変換の実現可能性
+1. **構文レベル（現在のアプローチで可能）**: 同一ファイル内の `impl Drop for X` を検出し、`X` 型変数の作成直後に `defer { x.drop_cleanup() }` を挿入
+2. **セマンティクスレベル（ra_ap_hir 必要）**: `sema.type_of_expr()` で変数の推論型を取得し、Drop trait の実装有無を判定
+3. **課題**: DB attach のセットアップ、ビルド時間（ra_ap_* は依存が巨大）、Cargo プロジェクト構造が必要（単一ファイルでは不可）
+
+### 推奨アプローチ
+- 短期: 構文レベルで `impl Drop` を検出し、同一ファイル内の変数作成にコメント付き `defer` を挿入
+- 長期: `ra_ap_hir` 統合で完全な型ベースの Drop → defer 変換

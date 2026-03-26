@@ -618,7 +618,7 @@ fn print_type(buf: &mut String, ty: &Type) {
                 buf.push_str("_");
             }
         }
-        Type::Infer(_) => buf.push('_'),
+        Type::Infer(_) => buf.push_str("_"), // WARNING: inferred type, may need manual annotation
         _ => buf.push_str("_"),
     }
 }
@@ -731,10 +731,16 @@ fn print_type_alias(buf: &mut String, t: &ItemType, level: usize) {
 fn print_const(buf: &mut String, c: &ItemConst, level: usize) {
     indent(buf, level);
     print_visibility(buf, &c.vis);
-    buf.push_str("const ");
-    buf.push_str(&c.ident.to_string());
-    buf.push_str(" : ");
-    print_type(buf, &c.ty);
+    // Use `let` if type is inferred (const requires explicit type in MoonBit)
+    if matches!(&*c.ty, Type::Infer(_)) {
+        buf.push_str("let ");
+        buf.push_str(&c.ident.to_string());
+    } else {
+        buf.push_str("const ");
+        buf.push_str(&c.ident.to_string());
+        buf.push_str(" : ");
+        print_type(buf, &c.ty);
+    }
     buf.push_str(" = ");
     print_expr(buf, &c.expr, level);
 }

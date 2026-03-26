@@ -120,7 +120,7 @@ mod tests {
     fn roundtrip_trait() {
         assert_roundtrip_structure(
             "trait Printable { fn to_string(&self) -> String; }",
-            &["trait Printable", "to_string(self)", "-> String"],
+            &["trait Printable", "to_string(Self)", "-> String"],
         );
     }
 

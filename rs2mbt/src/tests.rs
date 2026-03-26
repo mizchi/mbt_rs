@@ -429,7 +429,7 @@ fn test_todo_macro() {
 fn test_trait() {
     assert_rs2mbt(
         "trait Printable { fn to_string(&self) -> String; }",
-        "trait Printable {\n  to_string(self) -> String\n}",
+        "trait Printable {\n  to_string(Self) -> String\n}",
     );
 }
 
@@ -437,7 +437,7 @@ fn test_trait() {
 fn test_trait_with_super() {
     assert_rs2mbt(
         "trait Drawable: Display { fn draw(&self); }",
-        "trait Drawable : Show {\n  draw(self) -> Unit\n}",
+        "trait Drawable : Show {\n  draw(Self) -> Unit\n}",
     );
 }
 
@@ -774,7 +774,7 @@ fn test_generic_with_bounds() {
 fn test_trait_multiple_methods() {
     assert_rs2mbt(
         "trait Collection { fn size(&self) -> usize; fn is_empty(&self) -> bool; }",
-        "trait Collection {\n  size(self) -> Int\n  is_empty(self) -> Bool\n}",
+        "trait Collection {\n  size(Self) -> Int\n  is_empty(Self) -> Bool\n}",
     );
 }
 
@@ -823,7 +823,7 @@ fn test_derive_hash() {
 fn test_empty_struct() {
     assert_rs2mbt(
         "struct Unit;",
-        "struct Unit",
+        "struct Unit {}",
     );
 }
 
@@ -929,7 +929,7 @@ fn test_method_clone() {
 fn test_impl_trait_with_body() {
     assert_rs2mbt(
         "impl Display for Point { fn fmt(&self, f: &mut Formatter) -> Result<(), Error> { Ok(()) } }",
-        "impl Show for Point with fmt(self, f : Formatter) -> Result[Unit, Error] {\n  Ok(())\n}",
+        "impl Show for Point with fmt(self : Point, f : Formatter) -> Result[Unit, Error] {\n  Ok(())\n}",
     );
 }
 

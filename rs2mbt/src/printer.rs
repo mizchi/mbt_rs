@@ -664,7 +664,9 @@ fn print_struct(buf: &mut String, s: &ItemStruct, level: usize) {
             }
             buf.push(')');
         }
-        Fields::Unit => {}
+        Fields::Unit => {
+            buf.push_str(" {}");
+        }
     }
     buf.push_str(&derive_str);
 }
@@ -769,7 +771,22 @@ fn print_trait(buf: &mut String, t: &ItemTrait, level: usize) {
             indent(buf, level + 1);
             buf.push_str(&method.sig.ident.to_string());
             buf.push('(');
-            print_fn_params(buf, &method.sig.inputs);
+            // In trait definition, &self → Self
+            let mut first = true;
+            for arg in &method.sig.inputs {
+                if !first {
+                    buf.push_str(", ");
+                }
+                first = false;
+                match arg {
+                    FnArg::Receiver(_) => buf.push_str("Self"),
+                    FnArg::Typed(pat_type) => {
+                        print_pat(buf, &pat_type.pat, 0);
+                        buf.push_str(" : ");
+                        print_type(buf, &pat_type.ty);
+                    }
+                }
+            }
             buf.push(')');
             print_return_type(buf, &method.sig.output);
             buf.push('\n');
@@ -883,8 +900,14 @@ fn print_impl(buf: &mut String, i: &ItemImpl, level: usize) {
                     .filter(|a| !matches!(a, FnArg::Receiver(_)))
                     .collect();
                 let mut first = true;
-                // Add self as first param
-                buf.push_str("self");
+                // Add self with type annotation for trait impl
+                let self_ty = get_self_type_full();
+                if !self_ty.is_empty() {
+                    buf.push_str("self : ");
+                    buf.push_str(&self_ty);
+                } else {
+                    buf.push_str("self");
+                }
                 if !params.is_empty() {
                     buf.push_str(", ");
                 }

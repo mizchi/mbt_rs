@@ -1428,6 +1428,75 @@ fn deref_in_loop(arr: &Vec<i32>, target: i32) -> bool {
     false
 }
 
+// === Option comprehensive ===
+
+fn option_map(x: Option<i32>) -> Option<i32> {
+    x.map(|v| v * 2)
+}
+
+fn option_and_then(x: Option<i32>) -> Option<i32> {
+    x.and_then(|v| if v > 0 { Some(v) } else { None })
+}
+
+fn option_flatten(x: Option<Option<i32>>) -> Option<i32> {
+    x.flatten()
+}
+
+fn option_unwrap_or_else(x: Option<i32>) -> i32 {
+    x.unwrap_or_else(|| 0)
+}
+
+fn option_is_some_and(x: Option<i32>) -> bool {
+    x.is_some() && x.unwrap() > 0
+}
+
+fn option_or(a: Option<i32>, b: Option<i32>) -> Option<i32> {
+    match a {
+        Some(_) => a,
+        None => b,
+    }
+}
+
+fn option_to_result(x: Option<i32>) -> Result<i32, String> {
+    match x {
+        Some(v) => Ok(v),
+        None => Err("none".to_string()),
+    }
+}
+
+// === Result comprehensive ===
+
+fn result_map(x: Result<i32, String>) -> Result<i32, String> {
+    x.map(|v| v * 2)
+}
+
+fn result_map_err(x: Result<i32, String>) -> Result<i32, String> {
+    x.map_err(|e| format!("error: {}", e))
+}
+
+fn result_and_then(x: Result<i32, String>) -> Result<i32, String> {
+    x.and_then(|v| if v > 0 { Ok(v) } else { Err("negative".to_string()) })
+}
+
+fn result_unwrap_or(x: Result<i32, String>) -> i32 {
+    x.unwrap_or(0)
+}
+
+fn result_is_ok_and(x: Result<i32, String>) -> bool {
+    x.is_ok()
+}
+
+fn result_is_err_and(x: Result<i32, String>) -> bool {
+    x.is_err()
+}
+
+fn result_to_option(x: Result<i32, String>) -> Option<i32> {
+    match x {
+        Ok(v) => Some(v),
+        Err(_) => None,
+    }
+}
+
 fn count_ones(n: i32) -> i32 {
     let mut n = n;
     let mut count = 0;

@@ -347,7 +347,7 @@ fn test_closure() {
 fn test_closure_expr() {
     assert_rs2mbt(
         "fn foo() -> i32 { let f = |x: i32| x + 1; f(10) }",
-        "fn foo() -> Int {\n  let f = fn(x : Int) -> Unit { x + 1 }\n  f(10)\n}",
+        "fn foo() -> Int {\n  let f = fn(x : Int) { x + 1 }\n  f(10)\n}",
     );
 }
 
@@ -889,7 +889,7 @@ fn test_closure_with_return_type() {
 fn test_nested_method_calls() {
     assert_rs2mbt(
         "fn count(v: Vec<i32>) -> usize { v.iter().filter(|x| *x > 0).count() }",
-        "fn count(v : Array[Int]) -> Int {\n  v.filter(fn(x) -> Unit { x > 0 }).length()\n}",
+        "fn count(v : Array[Int]) -> Int {\n  v.filter(fn(x) { x > 0 }).length()\n}",
     );
 }
 

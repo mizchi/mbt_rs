@@ -632,6 +632,65 @@ test "deref_in_loop" {
   assert_eq(deref_in_loop([1, 2, 3], 5), false)
 }
 
+test "option_map" {
+  assert_eq(option_map(Some(5)), Some(10))
+  assert_eq(option_map(None), None)
+}
+
+test "option_and_then" {
+  assert_eq(option_and_then(Some(5)), Some(5))
+  assert_eq(option_and_then(Some(-3)), None)
+  assert_eq(option_and_then(None), None)
+}
+
+test "option_flatten" {
+  assert_eq(option_flatten(Some(Some(42))), Some(42))
+  assert_eq(option_flatten(Some(None)), None)
+  assert_eq(option_flatten(None), None)
+}
+
+test "option_unwrap_or_else" {
+  assert_eq(option_unwrap_or_else(Some(5)), 5)
+  assert_eq(option_unwrap_or_else(None), 0)
+}
+
+test "option_or" {
+  assert_eq(option_or(Some(1), Some(2)), Some(1))
+  assert_eq(option_or(None, Some(2)), Some(2))
+  assert_eq(option_or(None, None), None)
+}
+
+test "option_to_result" {
+  assert_eq(option_to_result(Some(42)), Ok(42))
+  assert_true(option_to_result(None) is Err(_))
+}
+
+test "result_map" {
+  assert_eq(result_map(Ok(5)), Ok(10))
+  assert_true(result_map(Err("x")) is Err(_))
+}
+
+test "result_and_then" {
+  assert_eq(result_and_then(Ok(5)), Ok(5))
+  assert_true(result_and_then(Ok(-3)) is Err(_))
+  assert_true(result_and_then(Err("x")) is Err(_))
+}
+
+test "result_unwrap_or" {
+  assert_eq(result_unwrap_or(Ok(5)), 5)
+  assert_eq(result_unwrap_or(Err("x")), 0)
+}
+
+test "result_is_ok_and" {
+  assert_eq(result_is_ok_and(Ok(1)), true)
+  assert_eq(result_is_ok_and(Err("x")), false)
+}
+
+test "result_to_option" {
+  assert_eq(result_to_option(Ok(5)), Some(5))
+  assert_eq(result_to_option(Err("x")), None)
+}
+
 test "is_power_of_two" {
   assert_eq(is_power_of_two(1), true)
   assert_eq(is_power_of_two(8), true)

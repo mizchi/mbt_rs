@@ -1452,7 +1452,14 @@ fn print_expr(buf: &mut String, expr: &Expr, level: usize) {
                 print_pat(buf, input, level);
             }
             buf.push(')');
-            print_return_type(buf, &c.output);
+            // For closures, omit return type if not explicit (let MoonBit infer)
+            match &c.output {
+                ReturnType::Type(_, ty) => {
+                    buf.push_str(" -> ");
+                    print_type(buf, ty);
+                }
+                ReturnType::Default => {} // Don't emit -> Unit for closures
+            }
             buf.push_str(" { ");
             print_expr(buf, &c.body, level);
             buf.push_str(" }");

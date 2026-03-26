@@ -148,7 +148,7 @@ pub fn lookup_method(name: &str) -> &str {
         "unwrap_or_default" => "or_default",
         "is_some" => "is_some",       // MoonBit: opt is Some(_) or method
         "is_none" => "is_none",
-        "and_then" => "map",
+        "and_then" => "bind",          // Option/Result: flat_map equivalent
         "or" => "or",
         "or_else" => "or_else",
         "expect" => "unwrap",         // MoonBit has no expect, use unwrap

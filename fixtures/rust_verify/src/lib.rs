@@ -130,6 +130,17 @@ mod behavioral_tests {
     #[test] fn test_option_unwrap_or_val() { assert_eq!(option_unwrap_or_val(Some(5), 0), 5); assert_eq!(option_unwrap_or_val(None, 42), 42); }
     #[test] fn test_int_to_string() { assert_eq!(int_to_string(42), "42"); }
     #[test] fn test_deref_in_loop() { assert!(deref_in_loop(&vec![1,2,3], 2)); assert!(!deref_in_loop(&vec![1,2,3], 5)); }
+    #[test] fn test_option_map() { assert_eq!(option_map(Some(5)), Some(10)); assert_eq!(option_map(None), None); }
+    #[test] fn test_option_and_then() { assert_eq!(option_and_then(Some(5)), Some(5)); assert_eq!(option_and_then(Some(-3)), None); }
+    #[test] fn test_option_flatten() { assert_eq!(option_flatten(Some(Some(42))), Some(42)); assert_eq!(option_flatten(None), None); }
+    #[test] fn test_option_unwrap_or_else() { assert_eq!(option_unwrap_or_else(Some(5)), 5); assert_eq!(option_unwrap_or_else(None), 0); }
+    #[test] fn test_option_or() { assert_eq!(option_or(Some(1), Some(2)), Some(1)); assert_eq!(option_or(None, Some(2)), Some(2)); }
+    #[test] fn test_option_to_result() { assert_eq!(option_to_result(Some(42)), Ok(42)); assert!(option_to_result(None).is_err()); }
+    #[test] fn test_result_map() { assert_eq!(result_map(Ok(5)), Ok(10)); assert!(result_map(Err("x".into())).is_err()); }
+    #[test] fn test_result_and_then() { assert_eq!(result_and_then(Ok(5)), Ok(5)); assert!(result_and_then(Ok(-3)).is_err()); }
+    #[test] fn test_result_unwrap_or() { assert_eq!(result_unwrap_or(Ok(5)), 5); assert_eq!(result_unwrap_or(Err("x".into())), 0); }
+    #[test] fn test_result_is_ok_and() { assert!(result_is_ok_and(Ok(1))); assert!(!result_is_ok_and(Err("x".into()))); }
+    #[test] fn test_result_to_option() { assert_eq!(result_to_option(Ok(5)), Some(5)); assert_eq!(result_to_option(Err("x".into())), None); }
     #[test] fn test_is_power_of_two() { assert!(is_power_of_two(8)); assert!(!is_power_of_two(6)); }
     #[test] fn test_is_prime() { assert!(is_prime(2)); assert!(is_prime(17)); assert!(!is_prime(4)); assert!(!is_prime(1)); }
     #[test] fn test_make_empty_vec() { assert_eq!(make_empty_vec(), Vec::<i32>::new()); }

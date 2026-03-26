@@ -540,6 +540,74 @@ test "digit_sum" {
   assert_eq(digit_sum(-42), 6)
 }
 
+test "is_sorted" {
+  assert_eq(is_sorted([1, 2, 3]), true)
+  assert_eq(is_sorted([3, 1, 2]), false)
+  assert_eq(is_sorted([]), true)
+}
+
+test "roman_digit" {
+  assert_eq(roman_digit(4), "IV")
+  assert_eq(roman_digit(9), "IX")
+  assert_eq(roman_digit(0), "?")
+}
+
+test "has_pair_sum" {
+  assert_eq(has_pair_sum([1, 2, 3, 4, 5], 9), true)
+  assert_eq(has_pair_sum([1, 2, 3, 4, 5], 20), false)
+}
+
+test "count_occurrences" {
+  assert_eq(count_occurrences([1, 2, 3, 2, 1], 2), 2)
+  assert_eq(count_occurrences([1, 2, 3], 5), 0)
+}
+
+test "most_frequent" {
+  assert_eq(most_frequent([1, 2, 2, 3, 3, 3]), Some(3))
+  assert_eq(most_frequent([]), None)
+}
+
+test "bool_to_int" {
+  assert_eq(bool_to_int(true), 1)
+  assert_eq(bool_to_int(false), 0)
+}
+
+test "int_to_bool" {
+  assert_eq(int_to_bool(0), false)
+  assert_eq(int_to_bool(42), true)
+}
+
+test "sign_char" {
+  assert_eq(sign_char(5), '+')
+  assert_eq(sign_char(-3), '-')
+  assert_eq(sign_char(0), '0')
+}
+
+test "first_some" {
+  assert_eq(first_some(None, Some(2), Some(3)), Some(2))
+  assert_eq(first_some(None, None, None), None)
+  assert_eq(first_some(Some(1), None, None), Some(1))
+}
+
+test "zip_options" {
+  assert_eq(zip_options(Some(1), Some(2)), Some((1, 2)))
+  assert_eq(zip_options(Some(1), None), None)
+}
+
+test "range_array" {
+  assert_eq(range_array(1, 5), [1, 2, 3, 4])
+  assert_eq(range_array(3, 3), [])
+}
+
+test "repeat_val" {
+  assert_eq(repeat_val(7, 3), [7, 7, 7])
+}
+
+test "binary_search" {
+  assert_eq(binary_search([1, 3, 5, 7, 9], 5), Some(2))
+  assert_eq(binary_search([1, 3, 5, 7, 9], 4), None)
+}
+
 test "is_power_of_two" {
   assert_eq(is_power_of_two(1), true)
   assert_eq(is_power_of_two(8), true)

@@ -112,6 +112,19 @@ mod behavioral_tests {
     #[test] fn test_lcm() { assert_eq!(lcm(4, 6), 12); }
     #[test] fn test_collatz_steps() { assert_eq!(collatz_steps(1), 0); assert_eq!(collatz_steps(6), 8); }
     #[test] fn test_digit_sum() { assert_eq!(digit_sum(123), 6); assert_eq!(digit_sum(0), 0); }
+    #[test] fn test_is_sorted() { assert!(is_sorted(&vec![1,2,3])); assert!(!is_sorted(&vec![3,1,2])); }
+    #[test] fn test_roman_digit() { assert_eq!(roman_digit(4), "IV"); assert_eq!(roman_digit(9), "IX"); }
+    #[test] fn test_has_pair_sum() { assert!(has_pair_sum(&vec![1,2,3,4,5], 9)); assert!(!has_pair_sum(&vec![1,2,3,4,5], 20)); }
+    #[test] fn test_count_occurrences() { assert_eq!(count_occurrences(&vec![1,2,3,2,1], 2), 2); }
+    #[test] fn test_most_frequent() { assert_eq!(most_frequent(vec![1,2,2,3,3,3]), Some(3)); }
+    #[test] fn test_bool_to_int() { assert_eq!(bool_to_int(true), 1); assert_eq!(bool_to_int(false), 0); }
+    #[test] fn test_int_to_bool() { assert!(!int_to_bool(0)); assert!(int_to_bool(42)); }
+    #[test] fn test_sign_char() { assert_eq!(sign_char(5), '+'); assert_eq!(sign_char(-3), '-'); assert_eq!(sign_char(0), '0'); }
+    #[test] fn test_first_some() { assert_eq!(first_some(None, Some(2), Some(3)), Some(2)); assert_eq!(first_some(None, None, None), None); }
+    #[test] fn test_zip_options() { assert_eq!(zip_options(Some(1), Some(2)), Some((1,2))); assert_eq!(zip_options(Some(1), None), None); }
+    #[test] fn test_range_array() { assert_eq!(range_array(1, 5), vec![1,2,3,4]); }
+    #[test] fn test_repeat_val() { assert_eq!(repeat_val(7, 3), vec![7,7,7]); }
+    #[test] fn test_binary_search() { assert_eq!(binary_search(&vec![1,3,5,7,9], 5), Some(2)); assert_eq!(binary_search(&vec![1,3,5,7,9], 4), None); }
     #[test] fn test_is_power_of_two() { assert!(is_power_of_two(8)); assert!(!is_power_of_two(6)); }
     #[test] fn test_is_prime() { assert!(is_prime(2)); assert!(is_prime(17)); assert!(!is_prime(4)); assert!(!is_prime(1)); }
     #[test] fn test_make_empty_vec() { assert_eq!(make_empty_vec(), Vec::<i32>::new()); }

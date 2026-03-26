@@ -1235,6 +1235,161 @@ fn digit_sum(n: i32) -> i32 {
     sum
 }
 
+// === Sorting / ordering ===
+
+fn is_sorted(arr: &Vec<i32>) -> bool {
+    let mut i = 1;
+    while i < arr.len() {
+        if arr[i] < arr[i - 1] {
+            return false;
+        }
+        i = i + 1;
+    }
+    true
+}
+
+// === Lookup table ===
+
+fn roman_digit(n: i32) -> String {
+    match n {
+        1 => "I".to_string(),
+        2 => "II".to_string(),
+        3 => "III".to_string(),
+        4 => "IV".to_string(),
+        5 => "V".to_string(),
+        6 => "VI".to_string(),
+        7 => "VII".to_string(),
+        8 => "VIII".to_string(),
+        9 => "IX".to_string(),
+        _ => "?".to_string(),
+    }
+}
+
+// === Two pointer ===
+
+fn has_pair_sum(sorted: &Vec<i32>, target: i32) -> bool {
+    if sorted.len() < 2 {
+        return false;
+    }
+    let mut lo = 0;
+    let mut hi = sorted.len() - 1;
+    while lo < hi {
+        let sum = sorted[lo] + sorted[hi];
+        if sum == target {
+            return true;
+        } else if sum < target {
+            lo = lo + 1;
+        } else {
+            hi = hi - 1;
+        }
+    }
+    false
+}
+
+// === Counting ===
+
+fn count_occurrences(arr: &Vec<i32>, target: i32) -> i32 {
+    let mut count = 0;
+    for x in arr {
+        if *x == target {
+            count = count + 1;
+        }
+    }
+    count
+}
+
+fn most_frequent(arr: Vec<i32>) -> Option<i32> {
+    if arr.is_empty() {
+        return None;
+    }
+    let mut best = arr[0];
+    let mut best_count = 0;
+    for x in &arr {
+        let c = count_occurrences(&arr, *x);
+        if c > best_count {
+            best_count = c;
+            best = *x;
+        }
+    }
+    Some(best)
+}
+
+// === Conversion between types ===
+
+fn bool_to_int(b: bool) -> i32 {
+    if b { 1 } else { 0 }
+}
+
+fn int_to_bool(n: i32) -> bool {
+    n != 0
+}
+
+fn sign_char(n: i32) -> char {
+    if n > 0 { '+' } else if n < 0 { '-' } else { '0' }
+}
+
+// === Option utilities ===
+
+fn first_some(a: Option<i32>, b: Option<i32>, c: Option<i32>) -> Option<i32> {
+    match a {
+        Some(_) => a,
+        None => match b {
+            Some(_) => b,
+            None => c,
+        },
+    }
+}
+
+fn zip_options(a: Option<i32>, b: Option<i32>) -> Option<(i32, i32)> {
+    match a {
+        Some(va) => match b {
+            Some(vb) => Some((va, vb)),
+            None => None,
+        },
+        None => None,
+    }
+}
+
+// === Array generation ===
+
+fn range_array(start: i32, end: i32) -> Vec<i32> {
+    let mut result = Vec::new();
+    let mut i = start;
+    while i < end {
+        result.push(i);
+        i = i + 1;
+    }
+    result
+}
+
+fn repeat_val(val: i32, n: i32) -> Vec<i32> {
+    let mut result = Vec::new();
+    let mut i = 0;
+    while i < n {
+        result.push(val);
+        i = i + 1;
+    }
+    result
+}
+
+// === Binary search ===
+
+fn binary_search(arr: &Vec<i32>, target: i32) -> Option<i32> {
+    let mut lo: i32 = 0;
+    let mut hi: i32 = arr.len() as i32 - 1;
+    while lo <= hi {
+        let mid = lo + (hi - lo) / 2;
+        if arr[mid as usize] == target {
+            return Some(mid);
+        } else if arr[mid as usize] < target {
+            lo = mid + 1;
+        } else {
+            hi = mid - 1;
+        }
+    }
+    None
+}
+
 fn count_ones(n: i32) -> i32 {
     let mut n = n;
     let mut count = 0;
